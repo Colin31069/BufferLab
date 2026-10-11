@@ -1,0 +1,21 @@
+@media print {
+  @page { size: A4; margin: 14mm; }
+  :root { color-scheme: light; }
+  body { background: #fff; color: #000; font-size: 10pt; }
+  .no-print { display: none !important; }
+  .safety-banner { margin: 0 0 8mm; border: 1px solid #888; background: #fff; }
+  .app-shell { display: block; max-width: none; padding: 0; }
+  .panel { border: 0; box-shadow: none; padding: 0; }
+  .result-panel[hidden] { display: none; }
+  .recipe-summary { grid-template-columns: repeat(3, 1fr); }
+  .summary-card, .formula-box { background: #fff; border: 1px solid #bbb; break-inside: avoid; }
+  table { font-size: 8.5pt; }
+  tr, .message, .source-note { break-inside: avoid; }
+  a { color: #000; text-decoration: none; }
+  .print-only { display: block !important; }
+  #record-print-summary { margin-top: 8mm; padding-top: 6mm; border-top: 2px solid #333; }
+  #record-print-summary h2 { margin-bottom: 4mm; }
+  .print-meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2mm 8mm; margin-bottom: 5mm; }
+  .print-meta p { margin: 0; }
+  .record-print-notes { white-space: pre-wrap; }
+}

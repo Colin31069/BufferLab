@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>緩衝液配製計算器</title>
+  <style>
+/*__INLINE_CSS__*/
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#calculator">跳至計算表單</a>
+  <header class="site-header no-print">
+    <div>
+      <p class="eyebrow">BufferLab · 離線研究工具</p>
+      <h1>緩衝液配製計算器</h1>
+      <p class="subtitle">把配方縮放、酸鹼比例與實驗防呆整理成可核對的 recipe。</p>
+    </div>
+    <button id="theme-toggle" class="icon-button" type="button" aria-label="切換深色模式">深色模式</button>
+  </header>
+
+  <div class="safety-banner" role="note">
+    <strong>研究用途提醒</strong>
+    <span>結果是理論計算與操作輔助，不取代試劑標示、實驗室 SOP 或校正過的 pH meter。</span>
+    <span id="storage-notice" hidden></span>
+  </div>
+
+  <main id="calculator" class="app-shell">
+    <section class="panel form-panel no-print" aria-labelledby="settings-title">
+      <div class="section-heading">
+        <div>
+          <p class="step-label">STEP 01</p>
+          <h2 id="settings-title">設定配製條件</h2>
+        </div>
+        <label class="example-picker">載入範例
+          <select id="example-select">
+            <option value="">請選擇</option>
+            <option value="pbs-1l">1 L 1× PBS</option>
+            <option value="pbs-500ml">500 mL 1× PBS</option>
+            <option value="phosphate-100ml">100 mL 0.1 M phosphate</option>
+            <option value="tris-1l">1 L 50 mM Tris</option>
+            <option value="hepes-500ml">500 mL 20 mM HEPES</option>
+          </select>
+        </label>
+      </div>
+
+      <form id="buffer-form" novalidate>
+        <div class="form-grid">
+          <div class="field field-wide">
+            <label for="buffer-select">緩衝液種類 <span aria-hidden="true">*</span></label>
+            <select id="buffer-select" name="buffer" required></select>
+            <p class="field-help" id="buffer-help">選擇後會自動切換適用欄位。</p>
+            <p class="field-error" data-error-for="buffer"></p>
+          </div>
+
+          <div class="field">
+            <label for="mode-display">配製模式</label>
+            <input id="mode-display" type="text" readonly>
+          </div>
+
+          <div class="field">
+            <label for="volume-input">目標體積 <span aria-hidden="true">*</span></label>
+            <div class="input-pair">
+              <input id="volume-input" name="volume" type="number" min="0" step="any" value="1" inputmode="decimal" required>
+              <select id="volume-unit" aria-label="體積單位">
+                <option value="µL">µL</option>
+                <option value="mL">mL</option>
+                <option value="L" selected>L</option>
+              </select>
+            </div>
+            <p class="field-error" data-error-for="volume"></p>
+          </div>
+
+          <div id="standard-fields" class="field">
+            <label for="strength-input">目標倍數 <span aria-hidden="true">*</span></label>
+            <div class="input-suffix">
+              <input id="strength-input" name="strength" type="number" min="0" step="any" value="1" inputmode="decimal">
+              <span>×</span>
+            </div>
+            <p class="field-help">可輸入配方允許範圍內的自訂倍數。</p>
+            <p class="field-error" data-error-for="strength"></p>
+          </div>
+
+          <div id="ph-field" class="field">
+            <label for="ph-input">目標 pH <span aria-hidden="true">*</span></label>
+            <input id="ph-input" name="ph" type="number" min="0" max="14" step="0.01" value="7.2" inputmode="decimal">
+            <p class="field-error" data-error-for="ph"></p>
+          </div>
+
+          <div id="concentration-field" class="field">
+            <label for="concentration-input">總緩衝物種濃度 <span aria-hidden="true">*</span></label>
+            <div class="input-pair">
+              <input id="concentration-input" name="concentration" type="number" min="0" step="any" value="100" inputmode="decimal">
+              <select id="concentration-unit" aria-label="濃度單位">
+                <option value="mM" selected>mM</option>
+                <option value="M">M</option>
+              </select>
+            </div>
+            <p class="field-error" data-error-for="concentration"></p>
+          </div>
+
+          <div id="temperature-field" class="field">
+            <label for="temperature-input">配製溫度</label>
+            <div class="input-suffix">
+              <input id="temperature-input" name="temperature" type="number" step="0.1" value="25" inputmode="decimal">
+              <span>°C</span>
+            </div>
+            <p class="field-help">僅 Tris 在 5–37°C 內套用溫度修正。</p>
+            <p class="field-error" data-error-for="temperature"></p>
+          </div>
+
+          <div id="prep-method-field" class="field field-wide">
+            <label for="prep-method">試劑來源</label>
+            <select id="prep-method">
+              <option value="solid">固體試劑</option>
+              <option value="stock">庫存液</option>
+            </select>
+          </div>
+        </div>
+
+        <fieldset id="paired-settings" class="subpanel">
+          <legend>酸型與鹼型試劑</legend>
+          <div class="form-grid">
+            <div class="field">
+              <label for="acid-reagent">酸型試劑</label>
+              <select id="acid-reagent"></select>
+            </div>
+            <div class="field">
+              <label for="base-reagent">鹼型試劑</label>
+              <select id="base-reagent"></select>
+            </div>
+            <div class="field solid-only">
+              <label for="acid-purity">酸型純度</label>
+              <div class="input-suffix"><input id="acid-purity" type="number" min="0.01" max="100" step="0.01" value="100"><span>%</span></div>
+              <p class="field-error" data-error-for="acidPurity"></p>
+            </div>
+            <div class="field solid-only">
+              <label for="base-purity">鹼型純度</label>
+              <div class="input-suffix"><input id="base-purity" type="number" min="0.01" max="100" step="0.01" value="100"><span>%</span></div>
+              <p class="field-error" data-error-for="basePurity"></p>
+            </div>
+            <div class="field stock-only">
+              <label for="acid-stock">酸型庫存液濃度</label>
+              <div class="input-suffix"><input id="acid-stock" type="number" min="0" step="any" value="1"><span>M</span></div>
+            </div>
+            <div class="field stock-only">
+              <label for="base-stock">鹼型庫存液濃度</label>
+              <div class="input-suffix"><input id="base-stock" type="number" min="0" step="any" value="1"><span>M</span></div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset id="standard-reagent-settings" class="subpanel">
+          <legend>試劑型態與純度</legend>
+          <div id="standard-reagent-list" class="form-grid"></div>
+        </fieldset>
+
+        <fieldset id="single-settings" class="subpanel">
+          <legend>緩衝劑試劑</legend>
+          <div class="form-grid">
+            <div class="field">
+              <label for="single-reagent">試劑</label>
+              <select id="single-reagent" disabled></select>
+            </div>
+            <div class="field solid-only">
+              <label for="single-purity">純度</label>
+              <div class="input-suffix"><input id="single-purity" type="number" min="0.01" max="100" step="0.01" value="100"><span>%</span></div>
+              <p class="field-error" data-error-for="singlePurity"></p>
+            </div>
+            <div class="field stock-only">
+              <label for="single-stock">庫存液濃度</label>
+              <div class="input-suffix"><input id="single-stock" type="number" min="0" step="any" value="1"><span>M</span></div>
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="form-actions">
+          <button class="button button-primary" type="submit">計算配方</button>
+          <button id="reset-button" class="button button-secondary" type="button">重設</button>
+        </div>
+      </form>
+    </section>
+
+    <aside class="panel history-panel no-print" aria-labelledby="history-title">
+      <div class="section-heading compact">
+        <div>
+          <p class="step-label">RECENT</p>
+          <h2 id="history-title">最近計算</h2>
+        </div>
+        <button id="clear-history" class="text-button" type="button">全部清除</button>
+      </div>
+      <div id="history-list" class="history-list"></div>
+    </aside>
+
+    <section id="result-panel" class="panel result-panel" aria-labelledby="result-title" hidden>
+      <div class="section-heading">
+        <div>
+          <p class="step-label">STEP 02</p>
+          <h2 id="result-title">配製結果</h2>
+        </div>
+        <div class="result-actions no-print">
+          <button id="copy-button" class="button button-secondary" type="button">複製配方</button>
+          <button id="print-button" class="button button-secondary" type="button">列印／PDF</button>
+        </div>
+      </div>
+      <div id="message-summary" aria-live="polite"></div>
+      <div id="recipe-output"></div>
+    </section>
+
+    <section id="record-editor-panel" class="panel record-editor-panel no-print" aria-labelledby="record-editor-title" hidden>
+      <div class="section-heading">
+        <div>
+          <p class="step-label">STEP 03</p>
+          <h2 id="record-editor-title">實際配製紀錄</h2>
+        </div>
+        <span id="record-edit-state" class="status-badge">新增紀錄</span>
+      </div>
+      <p class="field-help">理論計算不會自動改成實測結果；未填欄位會標示為「尚未記錄」。</p>
+      <form id="record-form" novalidate>
+        <input id="record-id" type="hidden">
+        <div class="form-grid">
+          <div class="field field-wide"><label for="record-title">紀錄標題／實驗名稱 *</label><input id="record-title" maxlength="120" required><p class="field-error" data-record-error></p></div>
+          <div class="field"><label for="record-prepared-at">配製日期時間</label><input id="record-prepared-at" type="datetime-local"></div>
+          <div class="field"><label for="record-actual-volume">實際最終體積</label><div class="input-pair"><input id="record-actual-volume" type="number" min="0" step="any"><select id="record-actual-volume-unit" aria-label="實際體積單位"><option value="µL">µL</option><option value="mL">mL</option><option value="L" selected>L</option></select></div></div>
+          <div class="field"><label for="record-temperature">操作溫度</label><div class="input-suffix"><input id="record-temperature" type="number" step="0.1"><span>°C</span></div></div>
+          <div class="field"><label for="record-ph">實測 pH</label><input id="record-ph" type="number" min="0" max="14" step="0.01"></div>
+          <div class="field"><label for="record-adjuster">pH 調整劑</label><input id="record-adjuster" maxlength="120" placeholder="例如 1 M NaOH"></div>
+          <div class="field"><label for="record-adjuster-volume">調整劑體積</label><div class="input-pair"><input id="record-adjuster-volume" type="number" min="0" step="any"><select id="record-adjuster-volume-unit" aria-label="調整劑體積單位"><option value="µL" selected>µL</option><option value="mL">mL</option><option value="L">L</option></select></div></div>
+        </div>
+        <h3>試劑實際使用</h3>
+        <div id="record-component-list" class="record-components"></div>
+        <div class="field field-wide"><label for="record-notes">備註</label><textarea id="record-notes" maxlength="2000" rows="4"></textarea></div>
+        <div class="form-actions">
+          <button class="button button-primary" type="submit">儲存配製紀錄</button>
+          <button id="record-new" class="button button-secondary" type="button">另存新紀錄</button>
+          <button id="record-print" class="button button-secondary" type="button">列印／PDF</button>
+        </div>
+        <div id="record-save-message" class="inline-status" aria-live="polite"></div>
+      </form>
+    </section>
+
+    <section id="record-print-summary" class="print-only"></section>
+
+    <section class="panel records-panel no-print" aria-labelledby="records-title">
+      <div class="section-heading">
+        <div><p class="step-label">ARCHIVE</p><h2 id="records-title">配製紀錄</h2></div>
+      </div>
+      <div class="record-filters">
+        <div class="field"><label for="record-search">名稱搜尋</label><input id="record-search" type="search" placeholder="輸入紀錄或緩衝液名稱"></div>
+        <div class="field"><label for="record-buffer-filter">緩衝液</label><select id="record-buffer-filter"><option value="">全部</option></select></div>
+        <div class="field"><label for="record-date-filter">配製日期</label><input id="record-date-filter" type="date"></div>
+      </div>
+      <div id="records-list" class="records-list"></div>
+    </section>
+
+    <details class="panel library-panel no-print" id="library-panel">
+      <summary><span class="step-label">LIBRARY</span><strong>自訂資料庫</strong></summary>
+      <p class="field-help">內建資料唯讀；自訂內容均標示為未經 BufferLab 驗證。</p>
+      <div id="library-message" class="inline-status" aria-live="polite"></div>
+      <div class="library-grid">
+        <section aria-labelledby="reagent-library-title">
+          <h3 id="reagent-library-title">自訂試劑</h3>
+          <form id="reagent-form" class="subpanel">
+            <input id="custom-reagent-id" type="hidden">
+            <div class="form-grid">
+              <div class="field"><label for="custom-reagent-zh">中文名稱 *</label><input id="custom-reagent-zh" maxlength="120" required></div>
+              <div class="field"><label for="custom-reagent-en">英文名稱</label><input id="custom-reagent-en" maxlength="120"></div>
+              <div class="field"><label for="custom-reagent-formula">化學式</label><input id="custom-reagent-formula" maxlength="80"></div>
+              <div class="field"><label for="custom-reagent-cas">CAS</label><input id="custom-reagent-cas" maxlength="80"></div>
+              <div class="field"><label for="custom-reagent-mass">分子量（g/mol）</label><input id="custom-reagent-mass" type="number" min="0" step="any"></div>
+              <div class="field"><label for="custom-reagent-form">型態</label><select id="custom-reagent-form"><option value="solid">固體</option><option value="liquid">液體</option><option value="stock">庫存液</option></select></div>
+              <div class="field"><label for="custom-reagent-hydration">水合型態</label><input id="custom-reagent-hydration" maxlength="80"></div>
+              <div class="field"><label for="custom-reagent-purity">預設純度（%）</label><input id="custom-reagent-purity" type="number" min="0.01" max="100" step="0.01" value="100"></div>
+              <div class="field field-wide"><label for="custom-reagent-source">來源備註</label><input id="custom-reagent-source" maxlength="500"></div>
+              <div class="field field-wide"><label for="custom-reagent-url">來源連結</label><input id="custom-reagent-url" type="url" maxlength="500"></div>
+            </div>
+            <div class="form-actions"><button class="button button-primary" type="submit">儲存試劑</button><button id="reagent-form-reset" class="button button-secondary" type="button">清除表單</button></div>
+          </form>
+          <div id="reagent-library-list" class="library-list"></div>
+        </section>
+
+        <section aria-labelledby="recipe-library-title">
+          <h3 id="recipe-library-title">自訂配方</h3>
+          <form id="recipe-form" class="subpanel">
+            <input id="custom-recipe-id" type="hidden">
+            <div class="form-grid">
+              <div class="field field-wide"><label for="custom-recipe-name">配方名稱 *</label><input id="custom-recipe-name" maxlength="120" required></div>
+              <div class="field"><label for="custom-recipe-type">計算類型</label><select id="custom-recipe-type"><option value="standard">固定配方縮放</option><option value="paired">成對酸鹼模型</option><option value="titration">滴定指引模型</option></select></div>
+              <div class="field"><label for="custom-recipe-ph">預設 pH</label><input id="custom-recipe-ph" type="number" min="0" max="14" step="0.01" value="7"></div>
+              <div class="field field-wide"><label for="custom-recipe-note">來源備註</label><input id="custom-recipe-note" maxlength="500"></div>
+              <div class="field field-wide"><label for="custom-recipe-url">來源連結</label><input id="custom-recipe-url" type="url" maxlength="500"></div>
+            </div>
+            <div id="custom-standard-fields">
+              <div class="form-grid"><div class="field"><label for="custom-base-volume">基準體積（L）</label><input id="custom-base-volume" type="number" min="0" step="any" value="1"></div><div class="field"><label for="custom-base-strength">基準倍數</label><input id="custom-base-strength" type="number" min="0" step="any" value="1"></div></div>
+              <div class="section-heading compact"><h3>配方組成</h3><button id="add-recipe-component" class="text-button" type="button">＋新增試劑</button></div>
+              <div id="custom-component-list" class="component-editor-list"></div>
+            </div>
+            <div id="custom-dynamic-fields" hidden>
+              <div class="form-grid">
+                <div class="field"><label for="custom-pka">25°C pKa</label><input id="custom-pka" type="number" min="0" max="14" step="any" value="7"></div>
+                <div class="field"><label for="custom-default-concentration">預設濃度（M）</label><input id="custom-default-concentration" type="number" min="0" step="any" value="0.05"></div>
+                <div class="field"><label for="custom-range-low">有效範圍下限</label><input id="custom-range-low" type="number" min="0" max="14" step="any" value="6"></div>
+                <div class="field"><label for="custom-range-high">有效範圍上限</label><input id="custom-range-high" type="number" min="0" max="14" step="any" value="8"></div>
+                <div class="field"><label for="custom-acid-label">酸型標籤</label><input id="custom-acid-label" maxlength="80" value="Acid"></div>
+                <div class="field"><label for="custom-base-label">鹼型標籤</label><input id="custom-base-label" maxlength="80" value="Base"></div>
+                <div id="custom-acid-reagent-field" class="field"><label for="custom-acid-reagent">酸型試劑</label><select id="custom-acid-reagent"></select></div>
+                <div id="custom-base-reagent-field" class="field"><label for="custom-base-reagent">鹼型試劑</label><select id="custom-base-reagent"></select></div>
+                <div id="custom-single-reagent-field" class="field" hidden><label for="custom-single-reagent">緩衝劑</label><select id="custom-single-reagent"></select></div>
+                <div class="field"><label for="custom-temp-coefficient">溫度係數（pKa/°C，可空白）</label><input id="custom-temp-coefficient" type="number" step="any"></div>
+                <div class="field"><label for="custom-temp-low">溫度下限（°C）</label><input id="custom-temp-low" type="number" step="any" value="5"></div>
+                <div class="field"><label for="custom-temp-high">溫度上限（°C）</label><input id="custom-temp-high" type="number" step="any" value="37"></div>
+              </div>
+            </div>
+            <div class="form-actions"><button class="button button-primary" type="submit">儲存配方</button><button id="recipe-form-reset" class="button button-secondary" type="button">清除表單</button></div>
+          </form>
+          <div id="recipe-library-list" class="library-list"></div>
+        </section>
+      </div>
+    </details>
+
+    <section class="panel help-panel no-print" aria-labelledby="help-title">
+      <p class="step-label">GUIDE</p>
+      <h2 id="help-title">使用與限制</h2>
+      <div class="help-grid">
+        <article><h3>標準模式</h3><p>依具來源的基準配方縮放體積與倍數，適合 PBS、TBS、TAE、TBE、SSC。</p></article>
+        <article><h3>動態模式</h3><p>使用 Henderson–Hasselbalch 理論比例。有效緩衝範圍通常約為 pKa ± 1。</p></article>
+        <article><h3>實際 pH</h3><p>理論值未完整處理活度、離子強度與所有溫度效應；務必在指定溫度實測。</p></article>
+      </div>
+    </section>
+
+    <details id="developer-tests" class="panel developer-panel no-print" hidden>
+      <summary>開發者測試</summary>
+      <div class="test-toolbar"><button id="run-tests" class="button button-secondary" type="button">重新執行測試</button></div>
+      <div id="test-output"></div>
+    </details>
+  </main>
+
+  <footer class="site-footer no-print">
+    <span>BufferLab v<span id="app-version"></span></span>
+    <span>資料版本 <span id="data-version"></span></span>
+    <span>所有資料只保存在此瀏覽器。</span>
+  </footer>
+
+  <script>
+/*__INLINE_JS__*/
+  </script>
+</body>
+</html>

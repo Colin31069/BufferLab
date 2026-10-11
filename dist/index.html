@@ -1,0 +1,2793 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>緩衝液配製計算器</title>
+  <style>
+:root {
+  color-scheme: light;
+  --bg: #f4f7f6;
+  --surface: #ffffff;
+  --surface-soft: #eef5f3;
+  --text: #152522;
+  --muted: #5b6b67;
+  --line: #d7e2df;
+  --accent: #087f6a;
+  --accent-strong: #056453;
+  --accent-soft: #d8f1eb;
+  --danger: #b42318;
+  --danger-soft: #fee4e2;
+  --warning: #9a5b00;
+  --warning-soft: #fff2cc;
+  --info: #2855a6;
+  --info-soft: #e8effc;
+  --shadow: 0 16px 45px rgba(20, 50, 44, 0.08);
+  --radius: 20px;
+  font-family: Inter, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #101816;
+  --surface: #17221f;
+  --surface-soft: #1e2d29;
+  --text: #e7f0ed;
+  --muted: #a6b7b2;
+  --line: #344641;
+  --accent: #56cbb4;
+  --accent-strong: #7dd9c6;
+  --accent-soft: #183d35;
+  --danger: #ff8a80;
+  --danger-soft: #4a2523;
+  --warning: #ffc76b;
+  --warning-soft: #44351c;
+  --info: #91b6ff;
+  --info-soft: #223552;
+  --shadow: 0 18px 55px rgba(0, 0, 0, 0.25);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; min-width: 320px; background: var(--bg); color: var(--text); line-height: 1.6; }
+button, input, select { font: inherit; }
+button, select { cursor: pointer; }
+button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 2px; }
+h1, h2, h3, p { margin-top: 0; }
+h1 { margin-bottom: .35rem; font-size: clamp(2rem, 5vw, 3.6rem); line-height: 1.05; letter-spacing: -.04em; }
+h2 { margin-bottom: 0; font-size: clamp(1.35rem, 2.5vw, 1.8rem); line-height: 1.2; }
+h3 { margin-bottom: .35rem; font-size: 1rem; }
+a { color: var(--accent-strong); }
+.skip-link { position: fixed; left: 1rem; top: -5rem; z-index: 20; padding: .7rem 1rem; background: var(--surface); color: var(--text); border-radius: .5rem; }
+.skip-link:focus { top: 1rem; }
+.site-header { max-width: 1240px; margin: 0 auto; padding: 3.5rem 1.25rem 1.5rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 2rem; }
+.eyebrow, .step-label { margin-bottom: .45rem; color: var(--accent); font-weight: 800; font-size: .76rem; letter-spacing: .14em; text-transform: uppercase; }
+.subtitle { max-width: 680px; margin-bottom: 0; color: var(--muted); font-size: 1.05rem; }
+.safety-banner { max-width: 1200px; margin: 0 auto 1.25rem; padding: .9rem 1.15rem; display: flex; gap: .65rem; background: var(--warning-soft); color: var(--text); border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent); border-radius: 14px; }
+.app-shell { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem 3rem; display: grid; grid-template-columns: minmax(0, 2fr) minmax(270px, .8fr); gap: 1.25rem; align-items: start; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: clamp(1.1rem, 3vw, 1.75rem); }
+.result-panel, .record-editor-panel, .records-panel, .library-panel, .help-panel, .developer-panel { grid-column: 1 / -1; }
+.section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.4rem; }
+.section-heading.compact { align-items: center; }
+.site-footer { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem 2rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 1rem; font-size: .88rem; }
+.muted { color: var(--muted); }
+.hidden { display: none !important; }
+.print-only { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+@media (max-width: 820px) {
+  .site-header { padding-top: 2rem; }
+  .app-shell { grid-template-columns: 1fr; }
+  .history-panel { grid-row: auto; }
+  .result-panel, .record-editor-panel, .records-panel, .library-panel, .help-panel, .developer-panel { grid-column: 1; }
+}
+
+@media (max-width: 560px) {
+  .site-header, .section-heading { flex-direction: column; }
+  .safety-banner { margin-inline: .75rem; flex-direction: column; }
+  .app-shell { padding-inline: .75rem; }
+  .panel { border-radius: 15px; }
+}
+
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.field { min-width: 0; }
+.field-wide { grid-column: 1 / -1; }
+.field label, .example-picker { display: block; margin-bottom: .35rem; font-weight: 750; font-size: .92rem; }
+input, select, textarea { width: 100%; min-height: 44px; padding: .68rem .8rem; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+textarea { resize: vertical; font: inherit; }
+input[readonly], select:disabled { color: var(--muted); background: var(--surface-soft); cursor: default; }
+.input-pair, .input-suffix { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+.input-pair input, .input-suffix input { border-radius: 10px 0 0 10px; }
+.input-pair select { width: 88px; border-left: 0; border-radius: 0 10px 10px 0; }
+.input-suffix span { min-width: 52px; display: grid; place-items: center; padding: 0 .7rem; color: var(--muted); background: var(--surface-soft); border: 1px solid var(--line); border-left: 0; border-radius: 0 10px 10px 0; }
+.field-help, .field-error { min-height: 1.3em; margin: .3rem 0 0; font-size: .8rem; }
+.field-help { color: var(--muted); }
+.field-error { color: var(--danger); font-weight: 700; }
+.subpanel { margin: 1.25rem 0 0; padding: 1rem; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 14px; }
+.subpanel legend { padding: 0 .45rem; font-weight: 800; }
+.form-actions, .result-actions, .test-toolbar { display: flex; flex-wrap: wrap; gap: .65rem; margin-top: 1.4rem; }
+.button, .icon-button, .text-button { border: 0; border-radius: 10px; font-weight: 800; }
+.button { min-height: 44px; padding: .68rem 1rem; }
+.button-primary { color: #fff; background: var(--accent); }
+.button-primary:hover { background: var(--accent-strong); }
+.button-secondary, .icon-button { color: var(--text); background: var(--surface-soft); border: 1px solid var(--line); }
+.icon-button { padding: .6rem .85rem; white-space: nowrap; }
+.text-button { padding: .35rem; color: var(--accent-strong); background: transparent; }
+.example-picker { min-width: 190px; color: var(--muted); }
+.example-picker select { margin-top: .25rem; }
+.history-list { display: grid; gap: .75rem; }
+.history-empty { color: var(--muted); font-size: .9rem; }
+.history-item { padding: .85rem; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px; }
+.history-item strong, .history-item span { display: block; }
+.history-item span { color: var(--muted); font-size: .83rem; }
+.history-actions { display: flex; gap: .35rem; margin-top: .55rem; }
+.history-actions button { flex: 1; padding: .35rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-size: .8rem; }
+.messages { display: grid; gap: .55rem; margin-bottom: 1rem; }
+.message { display: grid; grid-template-columns: auto 1fr; gap: .55rem; padding: .7rem .8rem; border-radius: 10px; border: 1px solid transparent; }
+.message-error { background: var(--danger-soft); border-color: color-mix(in srgb, var(--danger) 30%, transparent); }
+.message-warning { background: var(--warning-soft); border-color: color-mix(in srgb, var(--warning) 30%, transparent); }
+.message-info { background: var(--info-soft); border-color: color-mix(in srgb, var(--info) 30%, transparent); }
+.recipe-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin-bottom: 1.25rem; }
+.summary-card { padding: .9rem; background: var(--surface-soft); border-radius: 12px; }
+.summary-card span { display: block; color: var(--muted); font-size: .78rem; }
+.summary-card strong { display: block; margin-top: .15rem; font-size: 1rem; }
+.table-wrap { overflow-x: auto; margin-block: .8rem 1.25rem; }
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+th, td { padding: .72rem .6rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-size: .78rem; letter-spacing: .04em; }
+.formula-box { padding: 1rem; margin: .75rem 0 1.25rem; background: var(--surface-soft); border-left: 4px solid var(--accent); border-radius: 0 12px 12px 0; }
+.formula-box p:last-child { margin-bottom: 0; }
+.sop-list { padding-left: 1.25rem; }
+.sop-list li { margin-bottom: .4rem; }
+.source-note { padding-top: .75rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .84rem; }
+.help-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.help-grid article { padding: 1rem; background: var(--surface-soft); border-radius: 12px; }
+.help-grid p { margin-bottom: 0; color: var(--muted); }
+.developer-panel summary { font-weight: 800; cursor: pointer; }
+.test-pass { color: var(--accent-strong); }
+.test-fail { color: var(--danger); }
+.status-badge { display: inline-flex; align-items: center; min-height: 30px; padding: .2rem .65rem; color: var(--accent-strong); background: var(--accent-soft); border-radius: 999px; font-size: .78rem; font-weight: 800; }
+.status-badge.unverified { color: var(--warning); background: var(--warning-soft); }
+.inline-status { min-height: 1.5em; margin-top: .65rem; color: var(--muted); font-weight: 700; }
+.record-components, .records-list, .library-list, .component-editor-list { display: grid; gap: .75rem; margin-block: .75rem 1.25rem; }
+.record-component, .record-card, .library-item, .component-editor-row { padding: .85rem; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px; }
+.record-component-grid { display: grid; grid-template-columns: minmax(160px, 1.4fr) repeat(3, minmax(110px, 1fr)); gap: .65rem; align-items: end; }
+.record-component-grid .input-pair select { width: 76px; }
+.record-filters { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: .75rem; }
+.record-card-header, .library-item-header { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+.record-card p, .library-item p { margin: .25rem 0 0; color: var(--muted); font-size: .86rem; }
+.record-actions, .library-actions { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .65rem; }
+.record-actions button, .library-actions button, .component-editor-row button { padding: .38rem .6rem; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+.library-panel > summary { cursor: pointer; font-size: 1.35rem; }
+.library-panel > summary .step-label { display: block; }
+.library-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.25rem; }
+.component-editor-row { display: grid; grid-template-columns: 2fr 1.2fr 1fr auto; gap: .5rem; align-items: end; }
+.component-editor-row label { font-size: .78rem; }
+.provenance-strip { display: flex; flex-wrap: wrap; gap: .45rem; margin-bottom: 1rem; }
+.delta { color: var(--muted); font-size: .8rem; }
+
+@media (max-width: 680px) {
+  .form-grid, .recipe-summary, .help-grid { grid-template-columns: 1fr; }
+  .field-wide { grid-column: 1; }
+  .result-actions { margin-top: 0; }
+  .record-filters, .library-grid, .record-component-grid, .component-editor-row { grid-template-columns: 1fr; }
+}
+
+@media print {
+  @page { size: A4; margin: 14mm; }
+  :root { color-scheme: light; }
+  body { background: #fff; color: #000; font-size: 10pt; }
+  .no-print { display: none !important; }
+  .safety-banner { margin: 0 0 8mm; border: 1px solid #888; background: #fff; }
+  .app-shell { display: block; max-width: none; padding: 0; }
+  .panel { border: 0; box-shadow: none; padding: 0; }
+  .result-panel[hidden] { display: none; }
+  .recipe-summary { grid-template-columns: repeat(3, 1fr); }
+  .summary-card, .formula-box { background: #fff; border: 1px solid #bbb; break-inside: avoid; }
+  table { font-size: 8.5pt; }
+  tr, .message, .source-note { break-inside: avoid; }
+  a { color: #000; text-decoration: none; }
+  .print-only { display: block !important; }
+  #record-print-summary { margin-top: 8mm; padding-top: 6mm; border-top: 2px solid #333; }
+  #record-print-summary h2 { margin-bottom: 4mm; }
+  .print-meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2mm 8mm; margin-bottom: 5mm; }
+  .print-meta p { margin: 0; }
+  .record-print-notes { white-space: pre-wrap; }
+}
+
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#calculator">跳至計算表單</a>
+  <header class="site-header no-print">
+    <div>
+      <p class="eyebrow">BufferLab · 離線研究工具</p>
+      <h1>緩衝液配製計算器</h1>
+      <p class="subtitle">把配方縮放、酸鹼比例與實驗防呆整理成可核對的 recipe。</p>
+    </div>
+    <button id="theme-toggle" class="icon-button" type="button" aria-label="切換深色模式">深色模式</button>
+  </header>
+
+  <div class="safety-banner" role="note">
+    <strong>研究用途提醒</strong>
+    <span>結果是理論計算與操作輔助，不取代試劑標示、實驗室 SOP 或校正過的 pH meter。</span>
+    <span id="storage-notice" hidden></span>
+  </div>
+
+  <main id="calculator" class="app-shell">
+    <section class="panel form-panel no-print" aria-labelledby="settings-title">
+      <div class="section-heading">
+        <div>
+          <p class="step-label">STEP 01</p>
+          <h2 id="settings-title">設定配製條件</h2>
+        </div>
+        <label class="example-picker">載入範例
+          <select id="example-select">
+            <option value="">請選擇</option>
+            <option value="pbs-1l">1 L 1× PBS</option>
+            <option value="pbs-500ml">500 mL 1× PBS</option>
+            <option value="phosphate-100ml">100 mL 0.1 M phosphate</option>
+            <option value="tris-1l">1 L 50 mM Tris</option>
+            <option value="hepes-500ml">500 mL 20 mM HEPES</option>
+          </select>
+        </label>
+      </div>
+
+      <form id="buffer-form" novalidate>
+        <div class="form-grid">
+          <div class="field field-wide">
+            <label for="buffer-select">緩衝液種類 <span aria-hidden="true">*</span></label>
+            <select id="buffer-select" name="buffer" required></select>
+            <p class="field-help" id="buffer-help">選擇後會自動切換適用欄位。</p>
+            <p class="field-error" data-error-for="buffer"></p>
+          </div>
+
+          <div class="field">
+            <label for="mode-display">配製模式</label>
+            <input id="mode-display" type="text" readonly>
+          </div>
+
+          <div class="field">
+            <label for="volume-input">目標體積 <span aria-hidden="true">*</span></label>
+            <div class="input-pair">
+              <input id="volume-input" name="volume" type="number" min="0" step="any" value="1" inputmode="decimal" required>
+              <select id="volume-unit" aria-label="體積單位">
+                <option value="µL">µL</option>
+                <option value="mL">mL</option>
+                <option value="L" selected>L</option>
+              </select>
+            </div>
+            <p class="field-error" data-error-for="volume"></p>
+          </div>
+
+          <div id="standard-fields" class="field">
+            <label for="strength-input">目標倍數 <span aria-hidden="true">*</span></label>
+            <div class="input-suffix">
+              <input id="strength-input" name="strength" type="number" min="0" step="any" value="1" inputmode="decimal">
+              <span>×</span>
+            </div>
+            <p class="field-help">可輸入配方允許範圍內的自訂倍數。</p>
+            <p class="field-error" data-error-for="strength"></p>
+          </div>
+
+          <div id="ph-field" class="field">
+            <label for="ph-input">目標 pH <span aria-hidden="true">*</span></label>
+            <input id="ph-input" name="ph" type="number" min="0" max="14" step="0.01" value="7.2" inputmode="decimal">
+            <p class="field-error" data-error-for="ph"></p>
+          </div>
+
+          <div id="concentration-field" class="field">
+            <label for="concentration-input">總緩衝物種濃度 <span aria-hidden="true">*</span></label>
+            <div class="input-pair">
+              <input id="concentration-input" name="concentration" type="number" min="0" step="any" value="100" inputmode="decimal">
+              <select id="concentration-unit" aria-label="濃度單位">
+                <option value="mM" selected>mM</option>
+                <option value="M">M</option>
+              </select>
+            </div>
+            <p class="field-error" data-error-for="concentration"></p>
+          </div>
+
+          <div id="temperature-field" class="field">
+            <label for="temperature-input">配製溫度</label>
+            <div class="input-suffix">
+              <input id="temperature-input" name="temperature" type="number" step="0.1" value="25" inputmode="decimal">
+              <span>°C</span>
+            </div>
+            <p class="field-help">僅 Tris 在 5–37°C 內套用溫度修正。</p>
+            <p class="field-error" data-error-for="temperature"></p>
+          </div>
+
+          <div id="prep-method-field" class="field field-wide">
+            <label for="prep-method">試劑來源</label>
+            <select id="prep-method">
+              <option value="solid">固體試劑</option>
+              <option value="stock">庫存液</option>
+            </select>
+          </div>
+        </div>
+
+        <fieldset id="paired-settings" class="subpanel">
+          <legend>酸型與鹼型試劑</legend>
+          <div class="form-grid">
+            <div class="field">
+              <label for="acid-reagent">酸型試劑</label>
+              <select id="acid-reagent"></select>
+            </div>
+            <div class="field">
+              <label for="base-reagent">鹼型試劑</label>
+              <select id="base-reagent"></select>
+            </div>
+            <div class="field solid-only">
+              <label for="acid-purity">酸型純度</label>
+              <div class="input-suffix"><input id="acid-purity" type="number" min="0.01" max="100" step="0.01" value="100"><span>%</span></div>
+              <p class="field-error" data-error-for="acidPurity"></p>
+            </div>
+            <div class="field solid-only">
+              <label for="base-purity">鹼型純度</label>
+              <div class="input-suffix"><input id="base-purity" type="number" min="0.01" max="100" step="0.01" value="100"><span>%</span></div>
+              <p class="field-error" data-error-for="basePurity"></p>
+            </div>
+            <div class="field stock-only">
+              <label for="acid-stock">酸型庫存液濃度</label>
+              <div class="input-suffix"><input id="acid-stock" type="number" min="0" step="any" value="1"><span>M</span></div>
+            </div>
+            <div class="field stock-only">
+              <label for="base-stock">鹼型庫存液濃度</label>
+              <div class="input-suffix"><input id="base-stock" type="number" min="0" step="any" value="1"><span>M</span></div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset id="standard-reagent-settings" class="subpanel">
+          <legend>試劑型態與純度</legend>
+          <div id="standard-reagent-list" class="form-grid"></div>
+        </fieldset>
+
+        <fieldset id="single-settings" class="subpanel">
+          <legend>緩衝劑試劑</legend>
+          <div class="form-grid">
+            <div class="field">
+              <label for="single-reagent">試劑</label>
+              <select id="single-reagent" disabled></select>
+            </div>
+            <div class="field solid-only">
+              <label for="single-purity">純度</label>
+              <div class="input-suffix"><input id="single-purity" type="number" min="0.01" max="100" step="0.01" value="100"><span>%</span></div>
+              <p class="field-error" data-error-for="singlePurity"></p>
+            </div>
+            <div class="field stock-only">
+              <label for="single-stock">庫存液濃度</label>
+              <div class="input-suffix"><input id="single-stock" type="number" min="0" step="any" value="1"><span>M</span></div>
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="form-actions">
+          <button class="button button-primary" type="submit">計算配方</button>
+          <button id="reset-button" class="button button-secondary" type="button">重設</button>
+        </div>
+      </form>
+    </section>
+
+    <aside class="panel history-panel no-print" aria-labelledby="history-title">
+      <div class="section-heading compact">
+        <div>
+          <p class="step-label">RECENT</p>
+          <h2 id="history-title">最近計算</h2>
+        </div>
+        <button id="clear-history" class="text-button" type="button">全部清除</button>
+      </div>
+      <div id="history-list" class="history-list"></div>
+    </aside>
+
+    <section id="result-panel" class="panel result-panel" aria-labelledby="result-title" hidden>
+      <div class="section-heading">
+        <div>
+          <p class="step-label">STEP 02</p>
+          <h2 id="result-title">配製結果</h2>
+        </div>
+        <div class="result-actions no-print">
+          <button id="copy-button" class="button button-secondary" type="button">複製配方</button>
+          <button id="print-button" class="button button-secondary" type="button">列印／PDF</button>
+        </div>
+      </div>
+      <div id="message-summary" aria-live="polite"></div>
+      <div id="recipe-output"></div>
+    </section>
+
+    <section id="record-editor-panel" class="panel record-editor-panel no-print" aria-labelledby="record-editor-title" hidden>
+      <div class="section-heading">
+        <div>
+          <p class="step-label">STEP 03</p>
+          <h2 id="record-editor-title">實際配製紀錄</h2>
+        </div>
+        <span id="record-edit-state" class="status-badge">新增紀錄</span>
+      </div>
+      <p class="field-help">理論計算不會自動改成實測結果；未填欄位會標示為「尚未記錄」。</p>
+      <form id="record-form" novalidate>
+        <input id="record-id" type="hidden">
+        <div class="form-grid">
+          <div class="field field-wide"><label for="record-title">紀錄標題／實驗名稱 *</label><input id="record-title" maxlength="120" required><p class="field-error" data-record-error></p></div>
+          <div class="field"><label for="record-prepared-at">配製日期時間</label><input id="record-prepared-at" type="datetime-local"></div>
+          <div class="field"><label for="record-actual-volume">實際最終體積</label><div class="input-pair"><input id="record-actual-volume" type="number" min="0" step="any"><select id="record-actual-volume-unit" aria-label="實際體積單位"><option value="µL">µL</option><option value="mL">mL</option><option value="L" selected>L</option></select></div></div>
+          <div class="field"><label for="record-temperature">操作溫度</label><div class="input-suffix"><input id="record-temperature" type="number" step="0.1"><span>°C</span></div></div>
+          <div class="field"><label for="record-ph">實測 pH</label><input id="record-ph" type="number" min="0" max="14" step="0.01"></div>
+          <div class="field"><label for="record-adjuster">pH 調整劑</label><input id="record-adjuster" maxlength="120" placeholder="例如 1 M NaOH"></div>
+          <div class="field"><label for="record-adjuster-volume">調整劑體積</label><div class="input-pair"><input id="record-adjuster-volume" type="number" min="0" step="any"><select id="record-adjuster-volume-unit" aria-label="調整劑體積單位"><option value="µL" selected>µL</option><option value="mL">mL</option><option value="L">L</option></select></div></div>
+        </div>
+        <h3>試劑實際使用</h3>
+        <div id="record-component-list" class="record-components"></div>
+        <div class="field field-wide"><label for="record-notes">備註</label><textarea id="record-notes" maxlength="2000" rows="4"></textarea></div>
+        <div class="form-actions">
+          <button class="button button-primary" type="submit">儲存配製紀錄</button>
+          <button id="record-new" class="button button-secondary" type="button">另存新紀錄</button>
+          <button id="record-print" class="button button-secondary" type="button">列印／PDF</button>
+        </div>
+        <div id="record-save-message" class="inline-status" aria-live="polite"></div>
+      </form>
+    </section>
+
+    <section id="record-print-summary" class="print-only"></section>
+
+    <section class="panel records-panel no-print" aria-labelledby="records-title">
+      <div class="section-heading">
+        <div><p class="step-label">ARCHIVE</p><h2 id="records-title">配製紀錄</h2></div>
+      </div>
+      <div class="record-filters">
+        <div class="field"><label for="record-search">名稱搜尋</label><input id="record-search" type="search" placeholder="輸入紀錄或緩衝液名稱"></div>
+        <div class="field"><label for="record-buffer-filter">緩衝液</label><select id="record-buffer-filter"><option value="">全部</option></select></div>
+        <div class="field"><label for="record-date-filter">配製日期</label><input id="record-date-filter" type="date"></div>
+      </div>
+      <div id="records-list" class="records-list"></div>
+    </section>
+
+    <details class="panel library-panel no-print" id="library-panel">
+      <summary><span class="step-label">LIBRARY</span><strong>自訂資料庫</strong></summary>
+      <p class="field-help">內建資料唯讀；自訂內容均標示為未經 BufferLab 驗證。</p>
+      <div id="library-message" class="inline-status" aria-live="polite"></div>
+      <div class="library-grid">
+        <section aria-labelledby="reagent-library-title">
+          <h3 id="reagent-library-title">自訂試劑</h3>
+          <form id="reagent-form" class="subpanel">
+            <input id="custom-reagent-id" type="hidden">
+            <div class="form-grid">
+              <div class="field"><label for="custom-reagent-zh">中文名稱 *</label><input id="custom-reagent-zh" maxlength="120" required></div>
+              <div class="field"><label for="custom-reagent-en">英文名稱</label><input id="custom-reagent-en" maxlength="120"></div>
+              <div class="field"><label for="custom-reagent-formula">化學式</label><input id="custom-reagent-formula" maxlength="80"></div>
+              <div class="field"><label for="custom-reagent-cas">CAS</label><input id="custom-reagent-cas" maxlength="80"></div>
+              <div class="field"><label for="custom-reagent-mass">分子量（g/mol）</label><input id="custom-reagent-mass" type="number" min="0" step="any"></div>
+              <div class="field"><label for="custom-reagent-form">型態</label><select id="custom-reagent-form"><option value="solid">固體</option><option value="liquid">液體</option><option value="stock">庫存液</option></select></div>
+              <div class="field"><label for="custom-reagent-hydration">水合型態</label><input id="custom-reagent-hydration" maxlength="80"></div>
+              <div class="field"><label for="custom-reagent-purity">預設純度（%）</label><input id="custom-reagent-purity" type="number" min="0.01" max="100" step="0.01" value="100"></div>
+              <div class="field field-wide"><label for="custom-reagent-source">來源備註</label><input id="custom-reagent-source" maxlength="500"></div>
+              <div class="field field-wide"><label for="custom-reagent-url">來源連結</label><input id="custom-reagent-url" type="url" maxlength="500"></div>
+            </div>
+            <div class="form-actions"><button class="button button-primary" type="submit">儲存試劑</button><button id="reagent-form-reset" class="button button-secondary" type="button">清除表單</button></div>
+          </form>
+          <div id="reagent-library-list" class="library-list"></div>
+        </section>
+
+        <section aria-labelledby="recipe-library-title">
+          <h3 id="recipe-library-title">自訂配方</h3>
+          <form id="recipe-form" class="subpanel">
+            <input id="custom-recipe-id" type="hidden">
+            <div class="form-grid">
+              <div class="field field-wide"><label for="custom-recipe-name">配方名稱 *</label><input id="custom-recipe-name" maxlength="120" required></div>
+              <div class="field"><label for="custom-recipe-type">計算類型</label><select id="custom-recipe-type"><option value="standard">固定配方縮放</option><option value="paired">成對酸鹼模型</option><option value="titration">滴定指引模型</option></select></div>
+              <div class="field"><label for="custom-recipe-ph">預設 pH</label><input id="custom-recipe-ph" type="number" min="0" max="14" step="0.01" value="7"></div>
+              <div class="field field-wide"><label for="custom-recipe-note">來源備註</label><input id="custom-recipe-note" maxlength="500"></div>
+              <div class="field field-wide"><label for="custom-recipe-url">來源連結</label><input id="custom-recipe-url" type="url" maxlength="500"></div>
+            </div>
+            <div id="custom-standard-fields">
+              <div class="form-grid"><div class="field"><label for="custom-base-volume">基準體積（L）</label><input id="custom-base-volume" type="number" min="0" step="any" value="1"></div><div class="field"><label for="custom-base-strength">基準倍數</label><input id="custom-base-strength" type="number" min="0" step="any" value="1"></div></div>
+              <div class="section-heading compact"><h3>配方組成</h3><button id="add-recipe-component" class="text-button" type="button">＋新增試劑</button></div>
+              <div id="custom-component-list" class="component-editor-list"></div>
+            </div>
+            <div id="custom-dynamic-fields" hidden>
+              <div class="form-grid">
+                <div class="field"><label for="custom-pka">25°C pKa</label><input id="custom-pka" type="number" min="0" max="14" step="any" value="7"></div>
+                <div class="field"><label for="custom-default-concentration">預設濃度（M）</label><input id="custom-default-concentration" type="number" min="0" step="any" value="0.05"></div>
+                <div class="field"><label for="custom-range-low">有效範圍下限</label><input id="custom-range-low" type="number" min="0" max="14" step="any" value="6"></div>
+                <div class="field"><label for="custom-range-high">有效範圍上限</label><input id="custom-range-high" type="number" min="0" max="14" step="any" value="8"></div>
+                <div class="field"><label for="custom-acid-label">酸型標籤</label><input id="custom-acid-label" maxlength="80" value="Acid"></div>
+                <div class="field"><label for="custom-base-label">鹼型標籤</label><input id="custom-base-label" maxlength="80" value="Base"></div>
+                <div id="custom-acid-reagent-field" class="field"><label for="custom-acid-reagent">酸型試劑</label><select id="custom-acid-reagent"></select></div>
+                <div id="custom-base-reagent-field" class="field"><label for="custom-base-reagent">鹼型試劑</label><select id="custom-base-reagent"></select></div>
+                <div id="custom-single-reagent-field" class="field" hidden><label for="custom-single-reagent">緩衝劑</label><select id="custom-single-reagent"></select></div>
+                <div class="field"><label for="custom-temp-coefficient">溫度係數（pKa/°C，可空白）</label><input id="custom-temp-coefficient" type="number" step="any"></div>
+                <div class="field"><label for="custom-temp-low">溫度下限（°C）</label><input id="custom-temp-low" type="number" step="any" value="5"></div>
+                <div class="field"><label for="custom-temp-high">溫度上限（°C）</label><input id="custom-temp-high" type="number" step="any" value="37"></div>
+              </div>
+            </div>
+            <div class="form-actions"><button class="button button-primary" type="submit">儲存配方</button><button id="recipe-form-reset" class="button button-secondary" type="button">清除表單</button></div>
+          </form>
+          <div id="recipe-library-list" class="library-list"></div>
+        </section>
+      </div>
+    </details>
+
+    <section class="panel help-panel no-print" aria-labelledby="help-title">
+      <p class="step-label">GUIDE</p>
+      <h2 id="help-title">使用與限制</h2>
+      <div class="help-grid">
+        <article><h3>標準模式</h3><p>依具來源的基準配方縮放體積與倍數，適合 PBS、TBS、TAE、TBE、SSC。</p></article>
+        <article><h3>動態模式</h3><p>使用 Henderson–Hasselbalch 理論比例。有效緩衝範圍通常約為 pKa ± 1。</p></article>
+        <article><h3>實際 pH</h3><p>理論值未完整處理活度、離子強度與所有溫度效應；務必在指定溫度實測。</p></article>
+      </div>
+    </section>
+
+    <details id="developer-tests" class="panel developer-panel no-print" hidden>
+      <summary>開發者測試</summary>
+      <div class="test-toolbar"><button id="run-tests" class="button button-secondary" type="button">重新執行測試</button></div>
+      <div id="test-output"></div>
+    </details>
+  </main>
+
+  <footer class="site-footer no-print">
+    <span>BufferLab v<span id="app-version"></span></span>
+    <span>資料版本 <span id="data-version"></span></span>
+    <span>所有資料只保存在此瀏覽器。</span>
+  </footer>
+
+  <script>
+(function (root) {
+  "use strict";
+
+  const app = root.BufferLab = root.BufferLab || {};
+
+  app.Constants = Object.freeze({
+    APP_NAME: "緩衝液配製計算器",
+    VERSION: "2.0.0",
+    DATA_VERSION: "2026-08-04",
+    INITIAL_WATER_FRACTION: 0.8,
+    MIN_RELIABLE_MASS_G: 0.001,
+    HISTORY_LIMIT: 10,
+    STORAGE_KEYS: Object.freeze({
+      history: "bufferlab:v2:history",
+      theme: "bufferlab:v2:theme",
+      preferences: "bufferlab:v2:preferences",
+      customReagents: "bufferlab:v2:custom-reagents",
+      customRecipes: "bufferlab:v2:custom-recipes",
+      records: "bufferlab:v2:records",
+      migrated: "bufferlab:v2:migrated"
+    }),
+    LEGACY_STORAGE_KEYS: Object.freeze({
+      history: "bufferlab:v1:history",
+      theme: "bufferlab:v1:theme",
+      preferences: "bufferlab:v1:preferences"
+    }),
+    MESSAGE_LEVELS: Object.freeze({
+      error: "錯誤",
+      warning: "警告",
+      info: "提示"
+    })
+  });
+})(window);
+
+(function (root) {
+  "use strict";
+
+  const app = root.BufferLab;
+  const volumeFactors = Object.freeze({ L: 1, mL: 1e-3, "µL": 1e-6 });
+  const concentrationFactors = Object.freeze({ M: 1, mM: 1e-3 });
+  const massFactors = Object.freeze({ g: 1, mg: 1e-3, "µg": 1e-6 });
+
+  function finiteNumber(value, label) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) {
+      throw new TypeError(`${label || "數值"}必須是有限數字`);
+    }
+    return number;
+  }
+
+  function toLiters(value, unit) {
+    if (!(unit in volumeFactors)) throw new RangeError(`不支援的體積單位：${unit}`);
+    return finiteNumber(value, "體積") * volumeFactors[unit];
+  }
+
+  function fromLiters(value, unit) {
+    if (!(unit in volumeFactors)) throw new RangeError(`不支援的體積單位：${unit}`);
+    return finiteNumber(value, "體積") / volumeFactors[unit];
+  }
+
+  function toMolar(value, unit) {
+    if (!(unit in concentrationFactors)) throw new RangeError(`不支援的濃度單位：${unit}`);
+    return finiteNumber(value, "濃度") * concentrationFactors[unit];
+  }
+
+  function fromMolar(value, unit) {
+    if (!(unit in concentrationFactors)) throw new RangeError(`不支援的濃度單位：${unit}`);
+    return finiteNumber(value, "濃度") / concentrationFactors[unit];
+  }
+
+  function molesToMass(moles, molarMass, purityPercent) {
+    const theory = finiteNumber(moles, "莫耳數") * finiteNumber(molarMass, "分子量");
+    const purity = finiteNumber(purityPercent == null ? 100 : purityPercent, "純度") / 100;
+    if (purity <= 0 || purity > 1) throw new RangeError("純度必須大於 0 且不超過 100% ");
+    return { theoreticalG: theory, correctedG: theory / purity, purityPercent: purity * 100 };
+  }
+
+  function stockVolumeLiters(moles, stockConcentrationM) {
+    const concentration = finiteNumber(stockConcentrationM, "庫存液濃度");
+    if (concentration <= 0) throw new RangeError("庫存液濃度必須大於 0");
+    return finiteNumber(moles, "莫耳數") / concentration;
+  }
+
+  function toGrams(value, unit) {
+    if (!(unit in massFactors)) throw new RangeError(`不支援的質量單位：${unit}`);
+    return finiteNumber(value, "質量") * massFactors[unit];
+  }
+
+  function fromGrams(value, unit) {
+    if (!(unit in massFactors)) throw new RangeError(`不支援的質量單位：${unit}`);
+    return finiteNumber(value, "質量") / massFactors[unit];
+  }
+
+  app.Units = Object.freeze({
+    finiteNumber,
+    toLiters,
+    fromLiters,
+    toMolar,
+    fromMolar,
+    molesToMass,
+    stockVolumeLiters,
+    toGrams,
+    fromGrams
+  });
+})(window);
+
+(function (root) {
+  "use strict";
+
+  const app = root.BufferLab;
+
+  function number(value, maximumFractionDigits) {
+    if (!Number.isFinite(value)) return "—";
+    return new Intl.NumberFormat("zh-TW", {
+      maximumFractionDigits: maximumFractionDigits == null ? 4 : maximumFractionDigits
+    }).format(value);
+  }
+
+  function mass(grams) {
+    const absolute = Math.abs(grams);
+    if (absolute < 1e-3) return `${number(grams * 1e6, 3)} µg`;
+    if (absolute < 1) return `${number(grams * 1e3, 3)} mg`;
+    return `${number(grams, 4)} g`;
+  }
+
+  function volume(liters) {
+    const absolute = Math.abs(liters);
+    if (absolute < 1e-3) return `${number(liters * 1e6, 3)} µL`;
+    if (absolute < 1) return `${number(liters * 1e3, 3)} mL`;
+    return `${number(liters, 4)} L`;
+  }
+
+  function moles(value) {
+    const absolute = Math.abs(value);
+    if (absolute < 1e-6) return `${number(value * 1e9, 3)} nmol`;
+    if (absolute < 1e-3) return `${number(value * 1e6, 3)} µmol`;
+    if (absolute < 1) return `${number(value * 1e3, 3)} mmol`;
+    return `${number(value, 4)} mol`;
+  }
+
+  function concentration(molar) {
+    return molar < 1 ? `${number(molar * 1000, 4)} mM` : `${number(molar, 4)} M`;
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  app.Formatter = Object.freeze({ number, mass, volume, moles, concentration, escapeHtml });
+})(window);
+
+(function (root) {
+  "use strict";
+
+  const app = root.BufferLab;
+  app.References = Object.freeze({
+    thermoPbsTbs: Object.freeze({
+      title: "Thermo Fisher BestProtocols：PBS 與 TBS 組成",
+      url: "https://www.thermofisher.com/tw/zt/home/references/protocols/cell-and-tissue-analysis/protocols/icc-unfixed-cells-direct-method.html",
+      status: "manufacturer-protocol"
+    }),
+    bioRadElectrophoresis: Object.freeze({
+      title: "Bio-Rad Recipes for TAE and TBE Electrophoresis Buffers",
+      url: "https://www.bio-rad.com/webroot/web/pdf/lsr/literature/Bulletin_6230.pdf",
+      status: "manufacturer-protocol"
+    }),
+    thermoSsc: Object.freeze({
+      title: "Thermo Fisher 20X SSC Product Information",
+      url: "https://documents.thermofisher.com/TFS-Assets/LSG/manuals/sp_9762.pdf",
+      status: "manufacturer-product-data"
+    }),
+    sigmaBuffers: Object.freeze({
+      title: "MilliporeSigma Biological Buffers Selection Guide",
+      url: "https://www.sigmaaldrich.com/deepweb/assets/sigmaaldrich/marketing/global/documents/101/257/biological-buffers-selection-guide-ps3138en-ms.pdf",
+      status: "manufacturer-technical-guide"
+    }),
+    pubChem: Object.freeze({
+      title: "NIH PubChem Compound Database",
+      url: "https://pubchem.ncbi.nlm.nih.gov/",
+      status: "official-chemical-database"
+    })
+  });
+})(window);
+
+(function (root) {
+  "use strict";
+
+  const app = root.BufferLab;
+  const verifiedOn = "2026-07-31";
+
+  function reagent(data) {
+    return Object.freeze(Object.assign({
+      purityDefault: 100,
+      physicalForm: "solid",
+      unit: "g",
+      hydration: "anhydrous",
+      sourceRef: "pubChem",
+      verifiedOn,
+      status: "verified",
+      builtIn: true,
+      version: 1,
+      notes: "使用前請核對試劑瓶標示。"
+    }, data));
+  }
+
+  app.Reagents = Object.freeze({
+    nacl: reagent({ id: "nacl", zhName: "氯化鈉", enName: "Sodium chloride", formula: "NaCl", cas: "7647-14-5", molarMass: 58.44 }),
+    kcl: reagent({ id: "kcl", zhName: "氯化鉀", enName: "Potassium chloride", formula: "KCl", cas: "7447-40-7", molarMass: 74.5513 }),
+    kh2po4: reagent({ id: "kh2po4", zhName: "磷酸二氫鉀", enName: "Potassium phosphate monobasic", formula: "KH₂PO₄", cas: "7778-77-0", molarMass: 136.086 }),
+    na2hpo4: reagent({ id: "na2hpo4", zhName: "磷酸氫二鈉（無水）", enName: "Sodium phosphate dibasic, anhydrous", formula: "Na₂HPO₄", cas: "7558-79-4", molarMass: 141.958 }),
+    na2hpo4_2h2o: reagent({ id: "na2hpo4_2h2o", zhName: "磷酸氫二鈉二水合物", enName: "Sodium phosphate dibasic dihydrate", formula: "Na₂HPO₄·2H₂O", cas: "10028-24-7", molarMass: 177.99, hydration: "dihydrate" }),
+    na2hpo4_7h2o: reagent({ id: "na2hpo4_7h2o", zhName: "磷酸氫二鈉七水合物", enName: "Sodium phosphate dibasic heptahydrate", formula: "Na₂HPO₄·7H₂O", cas: "7782-85-6", molarMass: 268.07, hydration: "heptahydrate" }),
+    na2hpo4_12h2o: reagent({ id: "na2hpo4_12h2o", zhName: "磷酸氫二鈉十二水合物", enName: "Sodium phosphate dibasic dodecahydrate", formula: "Na₂HPO₄·12H₂O", cas: "10039-32-4", molarMass: 358.14, hydration: "dodecahydrate", sourceRef: "sigmaBuffers" }),
+    nah2po4: reagent({ id: "nah2po4", zhName: "磷酸二氫鈉（無水）", enName: "Sodium phosphate monobasic, anhydrous", formula: "NaH₂PO₄", cas: "7558-80-7", molarMass: 119.977 }),
+    nah2po4_h2o: reagent({ id: "nah2po4_h2o", zhName: "磷酸二氫鈉一水合物", enName: "Sodium phosphate monobasic monohydrate", formula: "NaH₂PO₄·H₂O", cas: "10049-21-5", molarMass: 137.99, hydration: "monohydrate" }),
+    nah2po4_2h2o: reagent({ id: "nah2po4_2h2o", zhName: "磷酸二氫鈉二水合物", enName: "Sodium phosphate monobasic dihydrate", formula: "NaH₂PO₄·2H₂O", cas: "13472-35-0", molarMass: 156.01, hydration: "dihydrate" }),
+    tris: reagent({ id: "tris", zhName: "Tris 鹼", enName: "Tris base", formula: "C₄H₁₁NO₃", cas: "77-86-1", molarMass: 121.14, sourceRef: "sigmaBuffers", notes: "pH 對溫度敏感；請在使用溫度附近量測。" }),
+    tris_hcl: reagent({ id: "tris_hcl", zhName: "Tris-HCl", enName: "Tris hydrochloride", formula: "C₄H₁₂ClNO₃", cas: "1185-53-1", molarMass: 157.60, sourceRef: "sigmaBuffers" }),
+    hepes: reagent({ id: "hepes", zhName: "HEPES", enName: "HEPES free acid", formula: "C₈H₁₈N₂O₄S", cas: "7365-45-9", molarMass: 238.30, sourceRef: "sigmaBuffers" }),
+    mes: reagent({ id: "mes", zhName: "MES", enName: "MES free acid", formula: "C₆H₁₃NO₄S", cas: "4432-31-9", molarMass: 195.24, sourceRef: "sigmaBuffers" }),
+    mops: reagent({ id: "mops", zhName: "MOPS", enName: "MOPS free acid", formula: "C₇H₁₅NO₄S", cas: "1132-61-2", molarMass: 209.26, sourceRef: "sigmaBuffers" }),
+    boric_acid: reagent({ id: "boric_acid", zhName: "硼酸", enName: "Boric acid", formula: "H₃BO₃", cas: "10043-35-3", molarMass: 61.83 }),
+    sodium_citrate_2h2o: reagent({ id: "sodium_citrate_2h2o", zhName: "檸檬酸三鈉二水合物", enName: "Trisodium citrate dihydrate", formula: "Na₃C₆H₅O₇·2H₂O", cas: "6132-04-3", molarMass: 294.10, hydration: "dihydrate" }),
+    sodium_citrate: reagent({ id: "sodium_citrate", zhName: "檸檬酸三鈉（無水）", enName: "Trisodium citrate, anhydrous", formula: "Na₃C₆H₅O₇", cas: "68-04-2", molarMass: 258.07, verifiedOn: "2026-08-04" }),
+    edta_stock_05m: reagent({ id: "edta_stock_05m", zhName: "0.5 M EDTA（pH 8.0）", enName: "0.5 M EDTA stock, pH 8.0", formula: "無單一化學式（0.5 M EDTA 二鈉鹽水溶液，pH 8.0）", cas: "—", molarMass: null, physicalForm: "stock", unit: "mL", notes: "使用已校正至 pH 8.0 的 0.5 M 庫存液。", sourceRef: "bioRadElectrophoresis" }),
+    acetic_acid_glacial: reagent({ id: "acetic_acid_glacial", zhName: "冰醋酸", enName: "Glacial acetic acid", formula: "CH₃COOH", cas: "64-19-7", molarMass: 60.052, physicalForm: "liquid", unit: "mL", notes: "具腐蝕性；應於合適防護與通風條件下操作。", sourceRef: "bioRadElectrophoresis" })
+  });
+})(window);
+
+(function (root) {
+  "use strict";
+
+  const app = root.BufferLab;
+
+  function freezeBuffer(data) {
+    data.builtIn = true;
+    data.status = "verified";
+    data.version = data.version || 1;
+    if (data.standardRecipe) {
+      data.standardRecipe.components = Object.freeze(data.standardRecipe.components.map(Object.freeze));
+      data.standardRecipe = Object.freeze(data.standardRecipe);
+    }
+    if (data.dynamic) data.dynamic = Object.freeze(data.dynamic);
+    return Object.freeze(data);
+  }
+
+  app.Buffers = Object.freeze({
+    pbs: freezeBuffer({
+      id: "pbs", name: "PBS（磷酸鹽緩衝生理食鹽水）", mode: "standard", defaultPH: 7.4,
+      referenceRef: "thermoPbsTbs", referenceNote: "依 1× 終濃度組成建立；不同機構 PBS 配方可能略有差異。",
+      standardRecipe: { baseVolumeL: 1, baseStrength: 1, strengthOptions: [0.5, 1, 5, 10], components: [
+        { reagentId: "nacl", kind: "moles", amount: 0.137 },
+        { reagentId: "kcl", kind: "moles", amount: 0.0027 },
+        { reagentId: "na2hpo4", kind: "moles", amount: 0.008 },
+        { reagentId: "kh2po4", kind: "moles", amount: 0.002 }
+      ] }
+    }),
+    tbs: freezeBuffer({
+      id: "tbs", name: "TBS（Tris 緩衝生理食鹽水）", mode: "standard", defaultPH: 7.4,
+      referenceRef: "thermoPbsTbs", referenceNote: "50 mM Tris、150 mM NaCl、pH 7.4。",
+      standardRecipe: { baseVolumeL: 1, baseStrength: 1, strengthOptions: [0.5, 1, 5, 10], components: [
+        { reagentId: "tris", kind: "moles", amount: 0.05 },
+        { reagentId: "nacl", kind: "moles", amount: 0.15 }
+      ] }
+    }),
+    tae: freezeBuffer({
+      id: "tae", name: "TAE 電泳緩衝液", mode: "standard", defaultPH: 8.3,
+      referenceRef: "bioRadElectrophoresis", referenceNote: "以 Bio-Rad 50× TAE 配方作為基準。",
+      standardRecipe: { baseVolumeL: 1, baseStrength: 50, strengthOptions: [0.5, 1, 10, 50], components: [
+        { reagentId: "tris", kind: "fixedMass", amount: 242, unit: "g" },
+        { reagentId: "acetic_acid_glacial", kind: "fixedVolume", amount: 57.1, unit: "mL" },
+        { reagentId: "edta_stock_05m", kind: "fixedVolume", amount: 100, unit: "mL" }
+      ] }
+    }),
+    tbe: freezeBuffer({
+      id: "tbe", name: "TBE 電泳緩衝液", mode: "standard", defaultPH: 8.3,
+      referenceRef: "bioRadElectrophoresis", referenceNote: "以 Bio-Rad 10× TBE 配方作為基準。",
+      standardRecipe: { baseVolumeL: 1, baseStrength: 10, strengthOptions: [0.5, 1, 5, 10], components: [
+        { reagentId: "tris", kind: "fixedMass", amount: 108, unit: "g" },
+        { reagentId: "boric_acid", kind: "fixedMass", amount: 55, unit: "g" },
+        { reagentId: "edta_stock_05m", kind: "fixedVolume", amount: 40, unit: "mL" }
+      ] }
+    }),
+    ssc: freezeBuffer({
+      id: "ssc", name: "SSC（生理食鹽水－檸檬酸鈉）", mode: "standard", defaultPH: 7.0,
+      referenceRef: "thermoSsc", referenceNote: "20× SSC 為 3 M NaCl、0.3 M sodium citrate；依倍數縮放。",
+      standardRecipe: { baseVolumeL: 1, baseStrength: 20, strengthOptions: [0.5, 1, 2, 5, 10, 20], components: [
+        { reagentId: "nacl", kind: "moles", amount: 3 },
+        { reagentId: "sodium_citrate_2h2o", kind: "moles", amount: 0.3 }
+      ] }
+    }),
+    phosphate: freezeBuffer({
+      id: "phosphate", name: "Phosphate buffer（NaH₂PO₄ / Na₂HPO₄）", mode: "dynamic", defaultPH: 7.2, defaultConcentrationM: 0.1,
+      referenceRef: "sigmaBuffers", referenceNote: "使用第二解離階段 H₂PO₄⁻/HPO₄²⁻ 的近似模型。",
+      dynamic: { strategy: "paired", pKa25: 7.21, usefulRange: [6.2, 8.2], acidLabel: "H₂PO₄⁻", baseLabel: "HPO₄²⁻", acidOptions: ["nah2po4", "nah2po4_h2o", "nah2po4_2h2o"], baseOptions: ["na2hpo4", "na2hpo4_2h2o", "na2hpo4_7h2o", "na2hpo4_12h2o"], polyproticApproximation: true }
+    }),
+    "phosphate-kh2po4": freezeBuffer({
+      id: "phosphate-kh2po4", name: "Phosphate buffer（KH₂PO₄ / Na₂HPO₄）", mode: "dynamic", defaultPH: 7.2, defaultConcentrationM: 0.1,
+      referenceRef: "sigmaBuffers", referenceNote: "使用第二解離階段近似；酸型固定為 KH₂PO₄、鹼型為 Na₂HPO₄，不含 NaCl 或 KCl。",
+      dynamic: { strategy: "paired", pKa25: 7.21, usefulRange: [6.2, 8.2], acidLabel: "H₂PO₄⁻", baseLabel: "HPO₄²⁻", acidOptions: ["kh2po4"], baseOptions: ["na2hpo4", "na2hpo4_2h2o", "na2hpo4_7h2o", "na2hpo4_12h2o"], polyproticApproximation: true }
+    }),
+    "tris-buffer": freezeBuffer({
+      id: "tris-buffer", name: "Tris / Tris-HCl buffer", mode: "dynamic", defaultPH: 8.0, defaultConcentrationM: 0.05,
+      referenceRef: "sigmaBuffers", referenceNote: "使用 Tris-HCl/Tris 成對試劑；5–37°C 內套用溫度修正。",
+      dynamic: { strategy: "paired", pKa25: 8.06, usefulRange: [7.0, 9.0], acidLabel: "Tris-H⁺", baseLabel: "Tris", acidOptions: ["tris_hcl"], baseOptions: ["tris"], temperatureCoefficient: -0.028, temperatureRange: [5, 37] }
+    }),
+    hepes: freezeBuffer({
+      id: "hepes", name: "HEPES buffer", mode: "dynamic", defaultPH: 7.4, defaultConcentrationM: 0.02,
+      referenceRef: "sigmaBuffers", referenceNote: "25°C pKa；自由酸配製後以 pH meter 滴定。",
+      dynamic: { strategy: "titration", pKa25: 7.56, usefulRange: [6.8, 8.2], acidLabel: "HEPES-H", baseLabel: "HEPES⁻", reagentId: "hepes" }
+    }),
+    mes: freezeBuffer({
+      id: "mes", name: "MES buffer", mode: "dynamic", defaultPH: 6.1, defaultConcentrationM: 0.05,
+      referenceRef: "sigmaBuffers", referenceNote: "25°C pKa；自由酸配製後以 pH meter 滴定。",
+      dynamic: { strategy: "titration", pKa25: 6.27, usefulRange: [5.5, 6.7], acidLabel: "MES-H", baseLabel: "MES⁻", reagentId: "mes" }
+    }),
+    mops: freezeBuffer({
+      id: "mops", name: "MOPS buffer", mode: "dynamic", defaultPH: 7.2, defaultConcentrationM: 0.02,
+      referenceRef: "sigmaBuffers", referenceNote: "25°C pKa；自由酸配製後以 pH meter 滴定。",
+      dynamic: { strategy: "titration", pKa25: 7.18, usefulRange: [6.5, 7.9], acidLabel: "MOPS-H", baseLabel: "MOPS⁻", reagentId: "mops" }
+    })
+  });
+})(window);
+
+(function (root) {
+  "use strict";
+
+  const app = root.BufferLab;
+  const keys = app.Constants.STORAGE_KEYS;
+  let lastError = null;
+  let migrationNotice = null;
+
+  function clone(value) {
+    return value == null ? value : JSON.parse(JSON.stringify(value));
+  }
+
+  function read(key, fallback) {
+    try {
+      const raw = root.localStorage.getItem(key);
+      if (raw == null) { lastError = null; return clone(fallback); }
+      const parsed = JSON.parse(raw);
+      lastError = null;
+      return parsed == null ? clone(fallback) : parsed;
+    } catch (_error) {
+      lastError = `無法讀取本機資料：${key}`;
+      return clone(fallback);
+    }
+  }
+
+  function write(key, value) {
+    const serialized = JSON.stringify(value);
+    try {
+      root.localStorage.setItem(key, serialized);
+      lastError = null;
+      return true;
+    } catch (_error) {
+      lastError = "瀏覽器儲存空間不足或目前不允許寫入；既有資料未被變更。";
+      return false;
+    }
+  }
+
+  function migrateV1() {
+    if (read(keys.migrated, false) === true) return migrationNotice;
+    const legacy = app.Constants.LEGACY_STORAGE_KEYS;
+    let copied = 0;
+    try {
+      if (root.localStorage.getItem(keys.history) == null) {
+        const history = read(legacy.history, []);
+        if (Array.isArray(history) && history.length && write(keys.history, history.slice(0, app.Constants.HISTORY_LIMIT))) copied += 1;
+      }
+      if (root.localStorage.getItem(keys.theme) == null) {
+        const theme = read(legacy.theme, null);
+        if ((theme === "light" || theme === "dark") && write(keys.theme, theme)) copied += 1;
+      }
+      if (root.localStorage.getItem(keys.preferences) == null) {
+        const preferences = read(legacy.preferences, null);
+        if (preferences && typeof preferences === "object" && write(keys.preferences, preferences)) copied += 1;
+      }
+      if (!write(keys.migrated, true)) return lastError;
+      migrationNotice = copied ? "已將 V1 的主題與最近計算複製到 V2；原始 V1 資料仍保留。" : null;
+    } catch (_error) {
+      migrationNotice = "部分舊資料無法遷移，但不影響 V2 計算功能。";
+    }
+    return migrationNotice;
+  }
+
+  function getCollection(key) {
+    const value = read(key, []);
+    return Array.isArray(value) ? value : [];
+  }
+
+  function setCollection(key, items) {
+    return write(key, items);
+  }
+
+  function getHistory() {
+    return getCollection(keys.history).slice(0, app.Constants.HISTORY_LIMIT);
+  }
+
+  function addHistory(entry) {
+    const history = getHistory();
+    history.unshift(clone(entry));
+    return write(keys.history, history.slice(0, app.Constants.HISTORY_LIMIT));
+  }
+
+  function deleteHistory(id) {
+    return write(keys.history, getHistory().filter((entry) => entry.id !== id));
+  }
+
+  function clearHistory() {
+    return write(keys.history, []);
+  }
+
+  function getTheme() {
+    const theme = read(keys.theme, null);
+    if (theme === "dark" || theme === "light") return theme;
+    return root.matchMedia && root.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+
+  function setTheme(theme) {
+    return write(keys.theme, theme === "dark" ? "dark" : "light");
+  }
+
+  function getCustomReagents() { return getCollection(keys.customReagents); }
+  function setCustomReagents(items) { return setCollection(keys.customReagents, items); }
+  function getCustomRecipes() { return getCollection(keys.customRecipes); }
+  function setCustomRecipes(items) { return setCollection(keys.customRecipes, items); }
+  function getRecords() {
+    return getCollection(keys.records).filter((item) => item && item.schemaVersion === 2 && item.id && item.result && item.result.schemaVersion === 2 && item.result.provenance && Array.isArray(item.result.components));
+  }
+  function setRecords(items) { return setCollection(keys.records, items); }
+  function getLastError() { return lastError; }
+
+  app.Storage = Object.freeze({
+    clone, read, write, migrateV1, getHistory, addHistory, deleteHistory, clearHistory,
+    getTheme, setTheme, getCustomReagents, setCustomReagents, getCustomRecipes,
+    setCustomRecipes, getRecords, setRecords, getLastError
+  });
+})(window);
+
+(function (root) {
+  "use strict";
+
+  const app = root.BufferLab;
+  const allowedProtocols = Object.freeze(["http:", "https:"]);
+  // V2 早期 history 的 state.bufferKey 使用 tris；僅保留讀取相容性，新程式碼應使用 tris-buffer。
+  const legacyBufferKeys = Object.freeze({ tris: "tris-buffer" });
+
+  function uid(prefix) {
+    return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+  }
+
+  function safeText(value, maximum, label) {
+    const text = String(value == null ? "" : value).trim();
+    if (!text) throw new Error(`${label}不可空白。`);
+    if (text.length > maximum) throw new Error(`${label}不可超過 ${maximum} 個字元。`);
+    return text;
+  }
+
+  function optionalText(value, maximum, label) {
+    const text = String(value == null ? "" : value).trim();
+    if (text.length > maximum) throw new Error(`${label}不可超過 ${maximum} 個字元。`);
+    return text;
+  }
+
+  function safeUrl(value) {
+    const text = optionalText(value, 500, "來源連結");
+    if (!text) return "";
+    let parsed;
+    try { parsed = new URL(text); } catch (_error) { throw new Error("來源連結格式不正確。"); }
+    if (!allowedProtocols.includes(parsed.protocol)) throw new Error("來源連結只接受 http 或 https。");
+    return parsed.href;
+  }
+
+  function finitePositive(value, label, allowZero) {
+    const number = Number(value);
+    if (!Number.isFinite(number) || (allowZero ? number < 0 : number <= 0)) throw new Error(`${label}必須是${allowZero ? "非負" : "大於 0 的"}數值。`);
+    return number;
+  }
+
+  function validateReagent(input, existing) {
+    const physicalForm = ["solid", "liquid", "stock"].includes(input.physicalForm) ? input.physicalForm : "solid";
+    const molarMass = input.molarMass === "" || input.molarMass == null ? null : finitePositive(input.molarMass, "分子量");
+    if (physicalForm === "solid" && molarMass == null) throw new Error("固體試劑必須填寫分子量。");
+    const purity = finitePositive(input.purityDefault == null ? 100 : input.purityDefault, "預設純度");
+    if (purity > 100) throw new Error("預設純度不可超過 100%。");
+    return {
+      schemaVersion: 2,
+      id: existing ? existing.id : uid("reagent"),
+      zhName: safeText(input.zhName, 120, "中文名稱"),
+      enName: optionalText(input.enName, 120, "英文名稱"),
+      formula: optionalText(input.formula, 80, "化學式") || "—",
+      cas: optionalText(input.cas, 80, "CAS") || "—",
+      molarMass,
+      physicalForm,
+      unit: physicalForm === "solid" ? "g" : "mL",
+      hydration: optionalText(input.hydration, 80, "水合型態") || "unspecified",
+      purityDefault: purity,
+      sourceNote: optionalText(input.sourceNote, 500, "來源備註"),
+      sourceUrl: safeUrl(input.sourceUrl),
+      notes: "使用者自訂試劑；使用前請核對試劑瓶標示。",
+      status: "user-unverified",
+      builtIn: false,
+      version: existing ? existing.version + 1 : 1,
+      createdAt: existing ? existing.createdAt : new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+  }
+
+  function allReagents() {
+    const merged = Object.assign({}, app.Reagents);
+    app.Storage.getCustomReagents().forEach((item) => { if (item && item.schemaVersion === 2 && item.id && item.zhName && item.status === "user-unverified") merged[item.id] = item; });
+    return merged;
+  }
+
+  function getReagent(id) { return allReagents()[id] || null; }
+
+  function validateComponent(component) {
+    const reagent = getReagent(component.reagentId);
+    if (!reagent) throw new Error("配方包含不存在的試劑。");
+    const kinds = ["moles", "fixedMass", "fixedVolume", "stock"];
+    if (!kinds.includes(component.kind)) throw new Error("配方組成類型不正確。");
+    const amount = finitePositive(component.amount, `${reagent.zhName} 用量`);
+    if (component.kind === "moles" && !Number.isFinite(reagent.molarMass)) throw new Error(`${reagent.zhName} 缺少分子量，不能以莫耳數計算。`);
+    if (component.kind === "fixedMass" && reagent.physicalForm !== "solid") throw new Error(`${reagent.zhName} 不是固體試劑，不能使用固定質量。`);
+    if ((component.kind === "fixedVolume" || component.kind === "stock") && reagent.physicalForm === "solid") throw new Error(`${reagent.zhName} 是固體試劑，不能使用固定體積。`);
+    const defaults = { moles: "mol", fixedMass: "g", fixedVolume: "mL", stock: "mL" };
+    return { reagentId: reagent.id, kind: component.kind, amount, unit: defaults[component.kind] };
+  }
+
+  function validateRecipe(input, existing) {
+    const modelType = ["standard", "paired", "titration"].includes(input.modelType) ? input.modelType : "standard";
+    const base = {
+      schemaVersion: 2,
+      id: existing ? existing.id : uid("recipe"),
+      name: safeText(input.name, 120, "配方名稱"),
+      defaultPH: finitePositive(input.defaultPH, "預設 pH", true),
+      referenceNote: optionalText(input.referenceNote, 500, "來源備註") || "使用者自訂配方，未經 BufferLab 驗證。",
+      sourceUrl: safeUrl(input.sourceUrl),
+      status: "user-unverified",
+      builtIn: false,
+      version: existing ? existing.version + 1 : 1,
+      createdAt: existing ? existing.createdAt : new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    if (base.defaultPH > 14) throw new Error("預設 pH 必須介於 0 與 14。 ");
+
+    if (modelType === "standard") {
+      const components = (input.components || []).map(validateComponent);
+      if (!components.length) throw new Error("標準配方至少需要一項試劑。 ");
+      base.mode = "standard";
+      base.standardRecipe = {
+        baseVolumeL: finitePositive(input.baseVolumeL, "基準體積"),
+        baseStrength: finitePositive(input.baseStrength, "基準倍數"),
+        strengthOptions: [1],
+        components
+      };
+    } else {
+      const pKa25 = finitePositive(input.pKa25, "pKa", true);
+      const rangeLow = finitePositive(input.rangeLow, "有效範圍下限", true);
+      const rangeHigh = finitePositive(input.rangeHigh, "有效範圍上限", true);
+      if (pKa25 > 14 || rangeHigh > 14 || rangeLow >= rangeHigh) throw new Error("pKa 或有效範圍不正確。 ");
+      base.mode = "dynamic";
+      base.defaultConcentrationM = finitePositive(input.defaultConcentrationM, "預設濃度");
+      base.dynamic = {
+        strategy: modelType,
+        pKa25,
+        usefulRange: [rangeLow, rangeHigh],
+        acidLabel: optionalText(input.acidLabel, 80, "酸型標籤") || "Acid",
+        baseLabel: optionalText(input.baseLabel, 80, "鹼型標籤") || "Base"
+      };
+      if (modelType === "paired") {
+        if (!getReagent(input.acidReagentId) || !getReagent(input.baseReagentId)) throw new Error("請選擇有效的酸型與鹼型試劑。 ");
+        base.dynamic.acidOptions = [input.acidReagentId];
+        base.dynamic.baseOptions = [input.baseReagentId];
+      } else {
+        if (!getReagent(input.reagentId)) throw new Error("請選擇有效的緩衝劑。 ");
+        base.dynamic.reagentId = input.reagentId;
+      }
+      if (input.temperatureCoefficient !== "" && input.temperatureCoefficient != null) {
+        const coefficient = Number(input.temperatureCoefficient);
+        if (!Number.isFinite(coefficient)) throw new Error("溫度係數必須是有限數值。 ");
+        base.dynamic.temperatureCoefficient = coefficient;
+        base.dynamic.temperatureRange = [finitePositive(input.temperatureLow, "溫度下限", true), finitePositive(input.temperatureHigh, "溫度上限", true)];
+        if (base.dynamic.temperatureRange[0] >= base.dynamic.temperatureRange[1]) throw new Error("溫度適用範圍不正確。 ");
+      }
+    }
+    return base;
+  }
+
+  function saveReagent(input) {
+    const items = app.Storage.getCustomReagents();
+    const index = items.findIndex((item) => item.id === input.id);
+    const saved = validateReagent(input, index >= 0 ? items[index] : null);
+    if (index >= 0) items[index] = saved; else items.push(saved);
+    if (!app.Storage.setCustomReagents(items)) throw new Error(app.Storage.getLastError());
+    return saved;
+  }
+
+  function saveRecipe(input) {
+    const items = app.Storage.getCustomRecipes();
+    const index = items.findIndex((item) => item.id === input.id);
+    const saved = validateRecipe(input, index >= 0 ? items[index] : null);
+    if (index >= 0) items[index] = saved; else items.push(saved);
+    if (!app.Storage.setCustomRecipes(items)) throw new Error(app.Storage.getLastError());
+    return saved;
+  }
+
+  function deleteReagent(id) {
+    if (app.Reagents[id]) throw new Error("內建試劑不可刪除。 ");
+    if (app.Storage.getCustomRecipes().some((recipe) => JSON.stringify(recipe).includes(`\"${id}\"`))) throw new Error("此試劑仍被自訂配方使用，請先修改配方。 ");
+    return app.Storage.setCustomReagents(app.Storage.getCustomReagents().filter((item) => item.id !== id));
+  }
+
+  function deleteRecipe(id) {
+    if (app.Buffers[id]) throw new Error("內建配方不可刪除。 ");
+    return app.Storage.setCustomRecipes(app.Storage.getCustomRecipes().filter((item) => item.id !== id));
+  }
+
+  function allBuffers() {
+    const merged = Object.assign({}, app.Buffers);
+    app.Storage.getCustomRecipes().forEach((item) => { if (item && item.schemaVersion === 2 && item.id && item.name && ["standard", "dynamic"].includes(item.mode) && item.status === "user-unverified") merged[item.id] = item; });
+    return merged;
+  }
+
+  function getBuffer(id) {
+    const buffers = allBuffers();
+    return buffers[id] || buffers[legacyBufferKeys[id]] || null;
+  }
+
+  app.Library = Object.freeze({
+    uid, safeUrl, validateReagent, validateRecipe, allReagents, getReagent,
+    allBuffers, getBuffer, saveReagent, saveRecipe, deleteReagent, deleteRecipe
+  });
+})(window);
+
+(function (root) {
+  "use strict";
+
+  const app = root.BufferLab;
+
+  function snapshot(value) {
+    return app.Storage.clone(value);
+  }
+
+  function attach(result) {
+    const reference = result.buffer.referenceRef ? app.References[result.buffer.referenceRef] : null;
+    result.schemaVersion = 2;
+    result.provenance = {
+      appVersion: app.Constants.VERSION,
+      dataVersion: app.Constants.DATA_VERSION,
+      recipeId: result.buffer.id,
+      recipeVersion: result.buffer.version || 1,
+      recipeStatus: result.buffer.status || "user-unverified",
+      recipeSnapshot: snapshot(result.buffer),
+      reagentSnapshots: result.components.map((component) => snapshot(component.reagent)),
+      reference: reference ? snapshot(reference) : {
+        title: result.buffer.referenceNote || "使用者自訂來源",
+        url: result.buffer.sourceUrl || "",
+        status: "user-provided"
+      },
+      calculatedAt: result.createdAt
+    };
+    return result;
+  }
+
+  app.Provenance = Object.freeze({ attach, snapshot });
+})(window);
+
+(function (root) {
+  "use strict";
+
+  const app = root.BufferLab;
+
+  function message(level, code, text, field) {
+    return { level, code, text, field: field || null };
+  }
+
+  function validateCommon(input, buffer) {
+    const messages = [];
+    if (!Number.isFinite(input.volumeL) || input.volumeL <= 0) {
+      messages.push(message("error", "INVALID_VOLUME", "目標體積必須大於 0。", "volume"));
+    }
+    if (!buffer) messages.push(message("error", "UNKNOWN_BUFFER", "找不到選取的緩衝液。", "buffer"));
+
+    if (buffer && buffer.mode === "standard") {
+      if (!Number.isFinite(input.strength) || input.strength <= 0) {
+        messages.push(message("error", "INVALID_STRENGTH", "標準倍數必須大於 0。", "strength"));
+      }
+    }
+
+    if (buffer && buffer.mode === "dynamic") {
+      if (!Number.isFinite(input.concentrationM) || input.concentrationM <= 0) {
+        messages.push(message("error", "INVALID_CONCENTRATION", "目標濃度必須大於 0。", "concentration"));
+      }
+      if (!Number.isFinite(input.pH) || input.pH < 0 || input.pH > 14) {
+        messages.push(message("error", "INVALID_PH", "目標 pH 必須介於 0 與 14。", "ph"));
+      }
+      if (!Number.isFinite(input.temperatureC)) {
+        messages.push(message("error", "INVALID_TEMPERATURE", "配製溫度必須是有限數值。", "temperature"));
+      }
+      if (Number.isFinite(input.pH) && buffer.dynamic) {
+        const limits = buffer.dynamic.usefulRange;
+        if (input.pH < limits[0] || input.pH > limits[1]) {
+          messages.push(message("warning", "OUTSIDE_BUFFER_RANGE", `目標 pH 超出建議緩衝範圍 ${limits[0]}–${limits[1]}。`, "ph"));
+        }
+      }
+    }
+
+    return messages;
+  }
+
+  function validatePurity(value, field) {
+    if (!Number.isFinite(value) || value <= 0 || value > 100) {
+      return message("error", "INVALID_PURITY", "純度必須大於 0 且不超過 100%。", field);
+    }
+    return null;
+  }
+
+  function liquidVolumeL(component) {
+    if (component.stockVolumeL != null) return component.stockVolumeL;
+    if (component.volumeL != null) return component.volumeL;
+    return 0;
+  }
+
+  function validateResult(result, input) {
+    const messages = [];
+    result.components.forEach((component) => {
+      if (component.correctedMassG != null && component.correctedMassG < app.Constants.MIN_RELIABLE_MASS_G) {
+        messages.push(message("warning", "LOW_MASS", `${component.reagent.zhName} 的秤量低於 1 mg；請確認天平能力或先配製庫存液。`));
+      }
+      if (!component.reagent || (component.kind === "mass" && !Number.isFinite(component.reagent.molarMass) && component.moles != null)) {
+        messages.push(message("error", "MISSING_MOLAR_MASS", "試劑缺少可驗證的分子量，無法計算。"));
+      }
+      if (liquidVolumeL(component) > input.volumeL) {
+        messages.push(message("error", "LIQUID_EXCEEDS_FINAL", `${component.reagent.zhName} 的液體體積大於最終體積。`));
+      }
+    });
+    const liquidTotal = result.components.reduce((sum, item) => sum + liquidVolumeL(item), 0);
+    if (liquidTotal > input.volumeL) {
+      messages.push(message("error", "LIQUID_TOTAL_EXCEEDS_FINAL", "所有液體體積總和大於最終體積。"));
+    } else if (liquidTotal > input.volumeL * 0.9) {
+      messages.push(message("warning", "LIQUID_NEAR_FINAL", "所有液體體積已超過最終體積的 90%；請保留足夠定容空間。"));
+    }
+    return messages;
+  }
+
+  function hasErrors(messages) {
+    return messages.some((item) => item.level === "error");
+  }
+
+  app.Validation = Object.freeze({ message, validateCommon, validatePurity, validateResult, hasErrors });
+})(window);
+
+(function (root) {
+  "use strict";
+
+  const app = root.BufferLab;
+
+  function calculate(input, buffer) {
+    const recipe = buffer.standardRecipe;
+    const scale = (input.volumeL / recipe.baseVolumeL) * (input.strength / recipe.baseStrength);
+    const components = recipe.components.map((definition) => {
+      const resolvedId = input.reagentOverrides && input.reagentOverrides[definition.reagentId] || definition.reagentId;
+      const reagent = app.Library.getReagent(resolvedId);
+      if (!reagent) throw new Error(`試劑 ${resolvedId} 不存在`);
+      const purity = Number(input.purities && input.purities[definition.reagentId]) || reagent.purityDefault;
+      if (definition.kind === "moles") {
+        const moles = definition.amount * scale;
+        const masses = app.Units.molesToMass(moles, reagent.molarMass, purity);
+        return {
+          reagent,
+          kind: "mass",
+          moles,
+          theoreticalMassG: masses.theoreticalG,
+          correctedMassG: masses.correctedG,
+          purityPercent: masses.purityPercent,
+          basis: `${app.Formatter.number(definition.amount / recipe.baseVolumeL, 4)} mol/L 於 ${recipe.baseStrength}× 基準配方`
+        };
+      }
+      if (definition.kind === "fixedMass") {
+        const theory = definition.amount * scale;
+        const corrected = theory / (purity / 100);
+        return { reagent, kind: "mass", moles: reagent.molarMass ? theory / reagent.molarMass : null, theoreticalMassG: theory, correctedMassG: corrected, purityPercent: purity, basis: `${definition.amount} g／${recipe.baseVolumeL} L ${recipe.baseStrength}×` };
+      }
+      const volumeL = app.Units.toLiters(definition.amount * scale, definition.unit);
+      return { reagent, kind: "volume", volumeL, basis: `${definition.amount} ${definition.unit}／${recipe.baseVolumeL} L ${recipe.baseStrength}×` };
+    });
+
+    return app.Provenance.attach({
+      schemaVersion: 2,
+      mode: "standard",
+      buffer,
+      input,
+      components,
+      calculation: {
+        formula: "目標用量 = 基準用量 × (目標體積 ÷ 基準體積) × (目標倍數 ÷ 基準倍數)",
+        scale
+      },
+      messages: [app.Validation.message("info", "FINAL_VOLUME", "固體溶解後請以 DI water 定容，不以固體體積推算剩餘水量。")],
+      createdAt: new Date().toISOString(),
+      dataVersion: app.Constants.DATA_VERSION
+    });
+  }
+
+  app.StandardRecipeEngine = Object.freeze({ calculate });
+})(window);
+
+(function (root) {
+  "use strict";
+
+  const app = root.BufferLab;
+
+  function calculatePka(buffer, temperatureC, messages) {
+    const dynamic = buffer.dynamic;
+    if (!dynamic.temperatureCoefficient) {
+      if (Math.abs(temperatureC - 25) > 0.5) {
+        messages.push(app.Validation.message("warning", "NO_TEMPERATURE_MODEL", "本配方沒有經來源確認的溫度係數；計算一律使用 25°C pKa，未套用你輸入的溫度。請以 pH meter 在實際使用溫度量測。", "temperature"));
+      }
+      return { pKa: dynamic.pKa25, temperatureApplied: false };
+    }
+    if (temperatureC < dynamic.temperatureRange[0] || temperatureC > dynamic.temperatureRange[1]) {
+      messages.push(app.Validation.message("warning", buffer.id === "tris-buffer" ? "TRIS_TEMPERATURE_RANGE" : "TEMPERATURE_RANGE", `溫度修正僅適用 ${dynamic.temperatureRange[0]}–${dynamic.temperatureRange[1]}°C；本次改用 25°C pKa。`, "temperature"));
+      return { pKa: dynamic.pKa25, temperatureApplied: false };
+    }
+    messages.push(app.Validation.message("info", "TEMPERATURE_CORRECTION", "已依配方提供的線性係數修正 pKa；最終 pH 仍須實測。"));
+    return { pKa: dynamic.pKa25 + dynamic.temperatureCoefficient * (temperatureC - 25), temperatureApplied: true };
+  }
+
+  function makeMassComponent(reagentId, moles, purityPercent, role) {
+    const reagent = app.Library.getReagent(reagentId);
+    if (!reagent || !Number.isFinite(reagent.molarMass)) throw new Error(`試劑 ${reagentId} 缺少分子量`);
+    const masses = app.Units.molesToMass(moles, reagent.molarMass, purityPercent || reagent.purityDefault);
+    return { reagent, role, kind: "mass", moles, theoreticalMassG: masses.theoreticalG, correctedMassG: masses.correctedG, purityPercent: masses.purityPercent };
+  }
+
+  function makeStockComponent(reagentId, moles, stockConcentrationM, role) {
+    const reagent = app.Library.getReagent(reagentId);
+    if (!reagent) throw new Error(`試劑 ${reagentId} 不存在`);
+    return { reagent, role, kind: "stock", moles, stockConcentrationM, stockVolumeL: app.Units.stockVolumeLiters(moles, stockConcentrationM) };
+  }
+
+  function calculate(input, buffer) {
+    const messages = [];
+    const dynamic = buffer.dynamic;
+    const pKaResult = calculatePka(buffer, input.temperatureC, messages);
+    const pKa = pKaResult.pKa;
+    const ratio = Math.pow(10, input.pH - pKa);
+    const acidConcentrationM = input.concentrationM / (1 + ratio);
+    const baseConcentrationM = input.concentrationM * ratio / (1 + ratio);
+    const totalMoles = input.concentrationM * input.volumeL;
+    const acidMoles = acidConcentrationM * input.volumeL;
+    const baseMoles = baseConcentrationM * input.volumeL;
+    const components = [];
+
+    if (Math.abs(input.pH - pKa) > 1) {
+      messages.push(app.Validation.message("warning", "PH_FAR_FROM_PKA", `目標 pH 與本次使用的 pKa ${pKa.toFixed(3)} 相差超過 1，緩衝能力可能不足。`, "ph"));
+    }
+
+    if (dynamic.strategy === "paired") {
+      const acidId = input.acidReagentId || dynamic.acidOptions[0];
+      const baseId = input.baseReagentId || dynamic.baseOptions[0];
+      if (input.useStock) {
+        components.push(makeStockComponent(acidId, acidMoles, input.acidStockM, "acid"));
+        components.push(makeStockComponent(baseId, baseMoles, input.baseStockM, "base"));
+      } else {
+        components.push(makeMassComponent(acidId, acidMoles, input.acidPurity, "acid"));
+        components.push(makeMassComponent(baseId, baseMoles, input.basePurity, "base"));
+      }
+      if (dynamic.polyproticApproximation) {
+        messages.push(app.Validation.message("warning", "POLYPROTIC_APPROXIMATION", "Phosphate 採最接近目標 pH 的 H₂PO₄⁻/HPO₄²⁻ 單一步驟近似，未完整計入活度與多重平衡。"));
+      }
+    } else {
+      if (input.useStock) {
+        components.push(makeStockComponent(dynamic.reagentId, totalMoles, input.singleStockM, "buffer"));
+      } else {
+        components.push(makeMassComponent(dynamic.reagentId, totalMoles, input.singlePurity, "buffer"));
+      }
+      messages.push(app.Validation.message("warning", "TITRATION_REQUIRED", "理論比例僅供理解；HCl／NaOH 實際用量受試劑型態、活度與離子強度影響，請以 pH meter 逐步滴定。"));
+    }
+
+    messages.push(app.Validation.message("info", "SOLUBILITY_NOT_EVALUATED", "本次結果未宣稱完整溶解度上限；若使用高濃度配方，請另查試劑技術資料。"));
+
+    return app.Provenance.attach({
+      schemaVersion: 2,
+      mode: "dynamic",
+      buffer,
+      input,
+      components,
+      calculation: {
+        formula: "pH = pKa + log₁₀([Base]/[Acid])",
+        pKa,
+        temperatureApplied: pKaResult.temperatureApplied,
+        ratio,
+        acidLabel: dynamic.acidLabel,
+        baseLabel: dynamic.baseLabel,
+        acidConcentrationM,
+        baseConcentrationM,
+        totalMoles
+      },
+      messages,
+      createdAt: new Date().toISOString(),
+      dataVersion: app.Constants.DATA_VERSION
+    });
+  }
+
+  app.DynamicBufferEngine = Object.freeze({ calculate, calculatePka });
+})(window);
+
+(function (root) {
+  "use strict";
+
+  const app = root.BufferLab;
+
+  function now() { return new Date().toISOString(); }
+
+  function optionalText(value, maximum, label) {
+    const text = String(value == null ? "" : value).trim();
+    if (text.length > maximum) throw new Error(`${label}不可超過 ${maximum} 個字元。`);
+    return text;
+  }
+
+  function optionalNumber(value, label, minimum, maximum) {
+    if (value == null || value === "") return null;
+    const number = Number(value);
+    if (!Number.isFinite(number) || number < minimum || (maximum != null && number > maximum)) throw new Error(`${label}超出允許範圍。`);
+    return number;
+  }
+
+  function volume(value, label) {
+    if (!value) return null;
+    if (!["µL", "mL", "L"].includes(value.unit)) throw new Error(`${label}單位不正確。`);
+    const amount = optionalNumber(value.value, label, 0);
+    return amount == null ? null : { value: amount, unit: value.unit };
+  }
+
+  function components(items, result) {
+    if (!Array.isArray(items)) return [];
+    if (items.length > result.components.length) throw new Error("實際試劑紀錄數量與計算結果不符。 ");
+    return items.map((item, index) => {
+      const theory = result.components[index];
+      if (!theory || item.reagentId !== theory.reagent.id) throw new Error("實際試劑順序與計算結果不符。 ");
+      const allowedUnits = theory.kind === "mass" ? ["µg", "mg", "g"] : ["µL", "mL", "L"];
+      if (!allowedUnits.includes(item.unit)) throw new Error(`${theory.reagent.zhName} 的實際用量單位不正確。`);
+      return {
+        reagentId: item.reagentId,
+        amount: optionalNumber(item.amount, `${theory.reagent.zhName} 實際用量`, 0),
+        unit: item.unit,
+        lot: optionalText(item.lot, 120, "批號"),
+        expiry: optionalText(item.expiry, 20, "效期")
+      };
+    });
+  }
+
+  function normalize(input, existing) {
+    if (!input || !input.result || input.result.schemaVersion !== 2) throw new Error("配製紀錄缺少有效的 V2 計算結果。 ");
+    const title = String(input.title || "").trim();
+    if (!title) throw new Error("請填寫紀錄標題／實驗名稱。 ");
+    if (title.length > 120) throw new Error("紀錄標題不可超過 120 個字元。 ");
+    const notes = String(input.notes || "");
+    if (notes.length > 2000) throw new Error("備註不可超過 2000 個字元。 ");
+    const timestamp = now();
+    return {
+      schemaVersion: 2,
+      id: existing ? existing.id : app.Library.uid("record"),
+      title,
+      bufferId: input.result.buffer.id,
+      bufferName: input.result.buffer.name,
+      createdAt: existing ? existing.createdAt : timestamp,
+      updatedAt: timestamp,
+      revision: existing ? (existing.revision || 1) + 1 : 1,
+      result: app.Storage.clone(input.result),
+      preparedAt: optionalText(input.preparedAt, 40, "配製時間"),
+      actualVolume: volume(input.actualVolume, "實際體積"),
+      actualTemperatureC: optionalNumber(input.actualTemperatureC, "操作溫度", -273.15),
+      measuredPH: optionalNumber(input.measuredPH, "實測 pH", 0, 14),
+      adjuster: optionalText(input.adjuster, 120, "pH 調整劑"),
+      adjusterVolume: volume(input.adjusterVolume, "調整劑體積"),
+      components: components(input.components || [], input.result),
+      notes
+    };
+  }
+
+  function save(input) {
+    const records = app.Storage.getRecords();
+    const index = records.findIndex((item) => item.id === input.id);
+    const saved = normalize(input, index >= 0 ? records[index] : null);
+    if (index >= 0) records[index] = saved; else records.unshift(saved);
+    if (!app.Storage.setRecords(records)) throw new Error(app.Storage.getLastError());
+    return saved;
+  }
+
+  function get(id) { return app.Storage.getRecords().find((item) => item.id === id) || null; }
+
+  function duplicate(id) {
+    const source = get(id);
+    if (!source) throw new Error("找不到要複製的紀錄。 ");
+    const copy = app.Storage.clone(source);
+    copy.id = "";
+    copy.title = `${source.title} 副本`;
+    copy.preparedAt = "";
+    return save(copy);
+  }
+
+  function remove(id) {
+    return app.Storage.setRecords(app.Storage.getRecords().filter((item) => item.id !== id));
+  }
+
+  app.Records = Object.freeze({ save, get, duplicate, remove });
+})(window);
+
+(function (root) {
+  "use strict";
+
+  const app = root.BufferLab;
+  const F = app.Formatter;
+
+  function messageIcon(level) {
+    return level === "error" ? "✕" : level === "warning" ? "!" : "i";
+  }
+
+  function renderMessages(container, messages) {
+    if (!messages.length) {
+      container.innerHTML = "";
+      return;
+    }
+    container.innerHTML = `<div class="messages">${messages.map((item) => `
+      <div class="message message-${F.escapeHtml(item.level)}" role="${item.level === "error" ? "alert" : "note"}">
+        <strong aria-hidden="true">${messageIcon(item.level)}</strong>
+        <span><strong>${F.escapeHtml(app.Constants.MESSAGE_LEVELS[item.level])}：</strong>${F.escapeHtml(item.text)}</span>
+      </div>`).join("")}</div>`;
+  }
+
+  function componentAmount(component) {
+    if (component.kind === "stock") return F.volume(component.stockVolumeL);
+    if (component.kind === "volume") return F.volume(component.volumeL);
+    if (Math.abs(component.correctedMassG - component.theoreticalMassG) < 1e-12) return F.mass(component.correctedMassG);
+    return `${F.mass(component.correctedMassG)}（理論 ${F.mass(component.theoreticalMassG)}）`;
+  }
+
+  function scrollBehavior() {
+    return root.matchMedia && root.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+  }
+
+  function componentRows(result) {
+    return result.components.map((component) => `
+      <tr>
+        <td><strong>${F.escapeHtml(component.reagent.zhName)}</strong><br><span class="muted">${F.escapeHtml(component.reagent.enName)}</span></td>
+        <td>${F.escapeHtml(component.reagent.formula)}</td>
+        <td>${component.reagent.molarMass ? `${F.number(component.reagent.molarMass, 4)} g/mol` : "—"}</td>
+        <td>${component.moles == null ? "—" : F.moles(component.moles)}</td>
+        <td><strong>${componentAmount(component)}</strong>${component.purityPercent != null ? `<br><span class="muted">純度 ${F.number(component.purityPercent, 2)}%</span>` : ""}${component.stockConcentrationM ? `<br><span class="muted">庫存液 ${F.concentration(component.stockConcentrationM)}</span>` : ""}</td>
+      </tr>`).join("");
+  }
+
+  function summaryCards(result) {
+    const input = result.input;
+    const concentration = result.mode === "dynamic" ? F.concentration(input.concentrationM) : `${F.number(input.strength, 3)}×`;
+    return `
+      <div class="recipe-summary">
+        <div class="summary-card"><span>緩衝液</span><strong>${F.escapeHtml(result.buffer.name)}</strong></div>
+        <div class="summary-card"><span>目標體積</span><strong>${F.volume(input.volumeL)}</strong></div>
+        <div class="summary-card"><span>${result.mode === "dynamic" ? "總濃度" : "目標倍數"}</span><strong>${concentration}</strong></div>
+        <div class="summary-card"><span>配製模式</span><strong>${result.mode === "standard" ? "標準配方縮放" : "動態酸鹼計算"}</strong></div>
+        <div class="summary-card"><span>目標 pH</span><strong>${F.number(result.mode === "dynamic" ? input.pH : result.buffer.defaultPH, 2)}</strong></div>
+        <div class="summary-card"><span>計算溫度</span><strong>${result.mode === "dynamic" ? result.calculation.temperatureApplied ? `${F.number(input.temperatureC, 1)}°C` : "25°C（未套用溫度修正）" : "依來源配方"}</strong></div>
+      </div>`;
+  }
+
+  function calculationDetails(result) {
+    if (result.mode === "standard") {
+      return `<p><strong>公式：</strong>${F.escapeHtml(result.calculation.formula)}</p><p><strong>本次縮放係數：</strong>${F.number(result.calculation.scale, 8)}</p>`;
+    }
+    const calc = result.calculation;
+    return `
+      <p><strong>公式：</strong>${F.escapeHtml(calc.formula)}</p>
+      <p><strong>使用 pKa：</strong>${F.number(calc.pKa, 4)}；<strong>${F.escapeHtml(calc.baseLabel)}/${F.escapeHtml(calc.acidLabel)}：</strong>${F.number(calc.ratio, 6)}</p>
+      <p><strong>${F.escapeHtml(calc.acidLabel)}：</strong>${F.concentration(calc.acidConcentrationM)}；<strong>${F.escapeHtml(calc.baseLabel)}：</strong>${F.concentration(calc.baseConcentrationM)}</p>`;
+  }
+
+  function sop(result) {
+    const input = result.input;
+    const initialWater = input.volumeL * app.Constants.INITIAL_WATER_FRACTION;
+    const names = result.components.map((item) => item.reagent.zhName).join("、");
+    const titration = result.mode === "dynamic" && result.buffer.dynamic.strategy === "titration";
+    return [
+      "準備乾淨容器、適用天平或量器，以及校正完成的 pH meter。",
+      `先加入約 ${F.volume(initialWater)} DI water（目標體積的 80%）。`,
+      `依序加入 ${names}，攪拌至完全溶解或混合均勻。`,
+      result.mode === "dynamic" ? `在約 ${F.number(input.temperatureC, 1)}°C 量測 pH。` : `確認配方建議 pH 約為 ${F.number(result.buffer.defaultPH, 2)}。`,
+      titration ? "本模式使用自由酸試劑；以適當濃度 NaOH 少量逐步滴定，若過量不可用理論值回推修正。" : "如需調整，使用適當濃度的 HCl 或 NaOH 少量逐步加入並持續量測。",
+      `以 DI water 定容至 ${F.volume(input.volumeL)}；不要以固體體積推算精確剩餘水量。`,
+      "充分混合後再次確認 pH，並記錄實際溫度與讀值。",
+      "依實驗室 SOP 決定是否過濾除菌、滅菌、分裝及保存。"
+    ];
+  }
+
+  function renderRecipe(container, result) {
+    const reference = result.provenance && result.provenance.reference || app.References[result.buffer.referenceRef] || { title: result.buffer.referenceNote || "使用者自訂來源", url: "" };
+    const source = reference.url ? `<a href="${F.escapeHtml(reference.url)}" target="_blank" rel="noreferrer">${F.escapeHtml(reference.title)}</a>` : F.escapeHtml(reference.title);
+    const verified = result.provenance && result.provenance.recipeStatus === "verified";
+    container.innerHTML = `
+      <div class="provenance-strip"><span class="status-badge${verified ? "" : " unverified"}">${verified ? "內建已驗證" : "使用者自訂／未經 BufferLab 驗證"}</span><span class="status-badge">配方 v${F.escapeHtml(result.provenance && result.provenance.recipeVersion || 1)}</span><span class="status-badge">Schema v${F.escapeHtml(result.schemaVersion)}</span></div>
+      ${summaryCards(result)}
+      <h3>試劑需求</h3>
+      <div class="table-wrap"><table><thead><tr><th>試劑</th><th>化學式</th><th>分子量</th><th>莫耳數</th><th>秤取／移取量</th></tr></thead><tbody>${componentRows(result)}</tbody></table></div>
+      <details open><summary><strong>計算依據</strong></summary><div class="formula-box">${calculationDetails(result)}</div></details>
+      <h3>配製 SOP</h3>
+      <ol class="sop-list">${sop(result).map((step) => `<li>${F.escapeHtml(step)}</li>`).join("")}</ol>
+      <p class="source-note"><strong>資料來源：</strong>${source}<br>${F.escapeHtml(result.buffer.referenceNote)} 資料版本：${F.escapeHtml(result.dataVersion)}；App：${F.escapeHtml(result.provenance && result.provenance.appVersion || app.Constants.VERSION)}。</p>`;
+  }
+
+  function toPlainText(result) {
+    const lines = [
+      `${app.Constants.APP_NAME} — ${result.buffer.name}`,
+      `模式：${result.mode === "standard" ? "標準配方縮放" : "動態酸鹼計算"}`,
+      `目標體積：${F.volume(result.input.volumeL)}`,
+      result.mode === "standard" ? `目標倍數：${F.number(result.input.strength, 3)}×` : `目標濃度：${F.concentration(result.input.concentrationM)}；目標 pH：${F.number(result.input.pH, 2)}`,
+      "",
+      "試劑需求："
+    ];
+    result.components.forEach((component) => lines.push(`- ${component.reagent.zhName}（${component.reagent.formula}）：${componentAmount(component)}`));
+    lines.push("", "配製步驟：");
+    sop(result).forEach((step, index) => lines.push(`${index + 1}. ${step}`));
+    lines.push("", "安全提醒：理論計算不取代 pH meter、試劑標示與實驗室 SOP。");
+    lines.push(`追溯資訊：BufferLab ${result.provenance && result.provenance.appVersion || app.Constants.VERSION}；配方 v${result.provenance && result.provenance.recipeVersion || 1}；${result.provenance && result.provenance.recipeStatus === "verified" ? "內建已驗證" : "使用者自訂／未經 BufferLab 驗證"}。`);
+    return lines.join("\n");
+  }
+
+  app.Renderer = Object.freeze({ renderMessages, renderRecipe, toPlainText, scrollBehavior });
+})(window);
+
+(function (root) {
+  "use strict";
+
+  const app = root.BufferLab;
+  const F = app.Formatter;
+  let elements;
+
+  function byId(id) { return document.getElementById(id); }
+  function setMessage(text, error) {
+    elements.message.textContent = text || "";
+    elements.message.style.color = error ? "var(--danger)" : "var(--accent-strong)";
+  }
+
+  function reagentOptions(selected) {
+    return Object.values(app.Library.allReagents()).map((item) => `<option value="${F.escapeHtml(item.id)}"${item.id === selected ? " selected" : ""}>${F.escapeHtml(item.zhName)}｜${F.escapeHtml(item.formula)}${item.builtIn ? "" : "｜自訂"}</option>`).join("");
+  }
+
+  function refreshReagentSelects() {
+    [elements.acidReagent, elements.baseReagent, elements.singleReagent].forEach((select) => {
+      const selected = select.value;
+      select.innerHTML = reagentOptions(selected);
+      if (selected && app.Library.getReagent(selected)) select.value = selected;
+    });
+    elements.componentList.querySelectorAll("[data-component-reagent]").forEach((select) => {
+      const selected = select.value;
+      select.innerHTML = reagentOptions(selected);
+      if (selected && app.Library.getReagent(selected)) select.value = selected;
+    });
+  }
+
+  function addComponent(component) {
+    const row = document.createElement("div");
+    row.className = "component-editor-row";
+    row.innerHTML = `
+      <label>試劑<select data-component-reagent>${reagentOptions(component && component.reagentId)}</select></label>
+      <label>類型<select data-component-kind>
+        <option value="moles">莫耳數</option><option value="fixedMass">固定質量</option><option value="fixedVolume">固定體積</option><option value="stock">庫存液體積</option>
+      </select></label>
+      <label>基準用量<input data-component-amount type="number" min="0" step="any" value="${component ? F.escapeHtml(component.amount) : "0"}"></label>
+      <button type="button" data-component-remove aria-label="移除此組成">移除</button>`;
+    if (component) row.querySelector("[data-component-kind]").value = component.kind;
+    elements.componentList.appendChild(row);
+  }
+
+  function renderReagents() {
+    elements.reagentList.innerHTML = Object.values(app.Library.allReagents()).map((item) => `
+      <article class="library-item">
+        <div class="library-item-header"><div><strong>${F.escapeHtml(item.zhName)}</strong><p>${F.escapeHtml(item.formula)}｜${item.molarMass ? `${F.number(item.molarMass, 4)} g/mol` : "無分子量"}｜v${item.version || 1}</p></div><span class="status-badge${item.builtIn ? "" : " unverified"}">${item.builtIn ? "內建已驗證" : "使用者自訂"}</span></div>
+        <div class="library-actions">${item.builtIn ? "" : `<button type="button" data-reagent-edit="${F.escapeHtml(item.id)}">編輯</button><button type="button" data-reagent-delete="${F.escapeHtml(item.id)}">刪除</button>`}<button type="button" data-reagent-copy="${F.escapeHtml(item.id)}">複製</button></div>
+      </article>`).join("");
+  }
+
+  function renderRecipes() {
+    elements.recipeList.innerHTML = Object.values(app.Library.allBuffers()).map((item) => `
+      <article class="library-item">
+        <div class="library-item-header"><div><strong>${F.escapeHtml(item.name)}</strong><p>${item.mode === "standard" ? "固定配方縮放" : item.dynamic.strategy === "paired" ? "成對酸鹼模型" : "滴定指引模型"}｜v${item.version || 1}</p></div><span class="status-badge${item.builtIn ? "" : " unverified"}">${item.builtIn ? "內建已驗證" : "使用者自訂"}</span></div>
+        <div class="library-actions">${item.builtIn ? "" : `<button type="button" data-recipe-edit="${F.escapeHtml(item.id)}">編輯</button><button type="button" data-recipe-delete="${F.escapeHtml(item.id)}">刪除</button>`}<button type="button" data-recipe-copy="${F.escapeHtml(item.id)}">複製</button></div>
+      </article>`).join("");
+  }
+
+  function refresh() {
+    refreshReagentSelects();
+    renderReagents();
+    renderRecipes();
+    root.dispatchEvent(new CustomEvent("bufferlab:library-changed"));
+  }
+
+  function resetReagentForm() {
+    elements.reagentForm.reset();
+    byId("custom-reagent-id").value = "";
+    byId("custom-reagent-purity").value = 100;
+  }
+
+  function reagentFormValue() {
+    return {
+      id: byId("custom-reagent-id").value,
+      zhName: byId("custom-reagent-zh").value,
+      enName: byId("custom-reagent-en").value,
+      formula: byId("custom-reagent-formula").value,
+      cas: byId("custom-reagent-cas").value,
+      molarMass: byId("custom-reagent-mass").value,
+      physicalForm: byId("custom-reagent-form").value,
+      hydration: byId("custom-reagent-hydration").value,
+      purityDefault: byId("custom-reagent-purity").value,
+      sourceNote: byId("custom-reagent-source").value,
+      sourceUrl: byId("custom-reagent-url").value
+    };
+  }
+
+  function loadReagent(item, asCopy) {
+    byId("custom-reagent-id").value = asCopy || item.builtIn ? "" : item.id;
+    byId("custom-reagent-zh").value = `${item.zhName}${asCopy ? " 副本" : ""}`;
+    byId("custom-reagent-en").value = item.enName || "";
+    byId("custom-reagent-formula").value = item.formula === "—" ? "" : item.formula;
+    byId("custom-reagent-cas").value = item.cas === "—" ? "" : item.cas;
+    byId("custom-reagent-mass").value = item.molarMass == null ? "" : item.molarMass;
+    byId("custom-reagent-form").value = item.physicalForm || "solid";
+    byId("custom-reagent-hydration").value = item.hydration || "";
+    byId("custom-reagent-purity").value = item.purityDefault || 100;
+    byId("custom-reagent-source").value = item.sourceNote || item.notes || "";
+    byId("custom-reagent-url").value = item.sourceUrl || "";
+    elements.reagentForm.scrollIntoView({ behavior: app.Renderer.scrollBehavior(), block: "start" });
+  }
+
+  function updateRecipeType() {
+    const type = byId("custom-recipe-type").value;
+    byId("custom-standard-fields").hidden = type !== "standard";
+    byId("custom-dynamic-fields").hidden = type === "standard";
+    byId("custom-acid-reagent-field").hidden = type !== "paired";
+    byId("custom-base-reagent-field").hidden = type !== "paired";
+    byId("custom-single-reagent-field").hidden = type !== "titration";
+  }
+
+  function resetRecipeForm() {
+    elements.recipeForm.reset();
+    byId("custom-recipe-id").value = "";
+    elements.componentList.innerHTML = "";
+    addComponent();
+    refreshReagentSelects();
+    updateRecipeType();
+  }
+
+  function recipeFormValue() {
+    const components = Array.from(elements.componentList.querySelectorAll(".component-editor-row")).map((row) => ({
+      reagentId: row.querySelector("[data-component-reagent]").value,
+      kind: row.querySelector("[data-component-kind]").value,
+      amount: row.querySelector("[data-component-amount]").value
+    }));
+    return {
+      id: byId("custom-recipe-id").value,
+      name: byId("custom-recipe-name").value,
+      modelType: byId("custom-recipe-type").value,
+      defaultPH: byId("custom-recipe-ph").value,
+      referenceNote: byId("custom-recipe-note").value,
+      sourceUrl: byId("custom-recipe-url").value,
+      baseVolumeL: byId("custom-base-volume").value,
+      baseStrength: byId("custom-base-strength").value,
+      components,
+      pKa25: byId("custom-pka").value,
+      defaultConcentrationM: byId("custom-default-concentration").value,
+      rangeLow: byId("custom-range-low").value,
+      rangeHigh: byId("custom-range-high").value,
+      acidLabel: byId("custom-acid-label").value,
+      baseLabel: byId("custom-base-label").value,
+      acidReagentId: byId("custom-acid-reagent").value,
+      baseReagentId: byId("custom-base-reagent").value,
+      reagentId: byId("custom-single-reagent").value,
+      temperatureCoefficient: byId("custom-temp-coefficient").value,
+      temperatureLow: byId("custom-temp-low").value,
+      temperatureHigh: byId("custom-temp-high").value
+    };
+  }
+
+  function loadRecipe(item, asCopy) {
+    byId("custom-recipe-id").value = asCopy || item.builtIn ? "" : item.id;
+    byId("custom-recipe-name").value = `${item.name}${asCopy ? " 副本" : ""}`;
+    byId("custom-recipe-ph").value = item.defaultPH;
+    byId("custom-recipe-note").value = item.referenceNote || "";
+    byId("custom-recipe-url").value = item.sourceUrl || "";
+    if (item.mode === "standard") {
+      byId("custom-recipe-type").value = "standard";
+      byId("custom-base-volume").value = item.standardRecipe.baseVolumeL;
+      byId("custom-base-strength").value = item.standardRecipe.baseStrength;
+      elements.componentList.innerHTML = "";
+      item.standardRecipe.components.forEach(addComponent);
+    } else {
+      byId("custom-recipe-type").value = item.dynamic.strategy;
+      byId("custom-pka").value = item.dynamic.pKa25;
+      byId("custom-default-concentration").value = item.defaultConcentrationM;
+      byId("custom-range-low").value = item.dynamic.usefulRange[0];
+      byId("custom-range-high").value = item.dynamic.usefulRange[1];
+      byId("custom-acid-label").value = item.dynamic.acidLabel;
+      byId("custom-base-label").value = item.dynamic.baseLabel;
+      byId("custom-acid-reagent").value = item.dynamic.acidOptions && item.dynamic.acidOptions[0] || "";
+      byId("custom-base-reagent").value = item.dynamic.baseOptions && item.dynamic.baseOptions[0] || "";
+      byId("custom-single-reagent").value = item.dynamic.reagentId || "";
+      byId("custom-temp-coefficient").value = item.dynamic.temperatureCoefficient == null ? "" : item.dynamic.temperatureCoefficient;
+      byId("custom-temp-low").value = item.dynamic.temperatureRange ? item.dynamic.temperatureRange[0] : 5;
+      byId("custom-temp-high").value = item.dynamic.temperatureRange ? item.dynamic.temperatureRange[1] : 37;
+    }
+    refreshReagentSelects();
+    updateRecipeType();
+    elements.recipeForm.scrollIntoView({ behavior: app.Renderer.scrollBehavior(), block: "start" });
+  }
+
+  function bindEvents() {
+    elements.reagentForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      try { const saved = app.Library.saveReagent(reagentFormValue()); resetReagentForm(); refresh(); setMessage(`已儲存試劑「${saved.zhName}」v${saved.version}。`); }
+      catch (error) { setMessage(error.message, true); }
+    });
+    byId("reagent-form-reset").addEventListener("click", resetReagentForm);
+    elements.recipeForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      try { const saved = app.Library.saveRecipe(recipeFormValue()); resetRecipeForm(); refresh(); setMessage(`已儲存配方「${saved.name}」v${saved.version}。`); }
+      catch (error) { setMessage(error.message, true); }
+    });
+    byId("recipe-form-reset").addEventListener("click", resetRecipeForm);
+    byId("custom-recipe-type").addEventListener("change", updateRecipeType);
+    byId("add-recipe-component").addEventListener("click", () => addComponent());
+    elements.componentList.addEventListener("click", (event) => { const button = event.target.closest("[data-component-remove]"); if (button) button.closest(".component-editor-row").remove(); });
+    elements.reagentList.addEventListener("click", (event) => {
+      const edit = event.target.closest("[data-reagent-edit]");
+      const copy = event.target.closest("[data-reagent-copy]");
+      const remove = event.target.closest("[data-reagent-delete]");
+      const id = edit && edit.dataset.reagentEdit || copy && copy.dataset.reagentCopy || remove && remove.dataset.reagentDelete;
+      const item = id && app.Library.getReagent(id);
+      if (edit && item) loadReagent(item, false);
+      if (copy && item) loadReagent(item, true);
+      if (remove && item && root.confirm(`確定刪除自訂試劑「${item.zhName}」？`)) { try { if (!app.Library.deleteReagent(id)) throw new Error(app.Storage.getLastError()); refresh(); setMessage("已刪除自訂試劑。 "); } catch (error) { setMessage(error.message, true); } }
+    });
+    elements.recipeList.addEventListener("click", (event) => {
+      const edit = event.target.closest("[data-recipe-edit]");
+      const copy = event.target.closest("[data-recipe-copy]");
+      const remove = event.target.closest("[data-recipe-delete]");
+      const id = edit && edit.dataset.recipeEdit || copy && copy.dataset.recipeCopy || remove && remove.dataset.recipeDelete;
+      const item = id && app.Library.getBuffer(id);
+      if (edit && item) loadRecipe(item, false);
+      if (copy && item) loadRecipe(item, true);
+      if (remove && item && root.confirm(`確定刪除自訂配方「${item.name}」？既有配製紀錄不受影響。`)) { if (app.Library.deleteRecipe(id)) { refresh(); setMessage("已刪除自訂配方。 "); } else setMessage(app.Storage.getLastError(), true); }
+    });
+  }
+
+  function init() {
+    elements = {
+      message: byId("library-message"), reagentForm: byId("reagent-form"), recipeForm: byId("recipe-form"),
+      reagentList: byId("reagent-library-list"), recipeList: byId("recipe-library-list"), componentList: byId("custom-component-list"),
+      acidReagent: byId("custom-acid-reagent"), baseReagent: byId("custom-base-reagent"), singleReagent: byId("custom-single-reagent")
+    };
+    addComponent();
+    refreshReagentSelects();
+    renderReagents();
+    renderRecipes();
+    updateRecipeType();
+    bindEvents();
+  }
+
+  app.LibraryUI = Object.freeze({ init, refresh });
+})(window);
+
+(function (root) {
+  "use strict";
+
+  const app = root.BufferLab;
+  const F = app.Formatter;
+  let elements;
+  let currentResult = null;
+  let currentRecord = null;
+
+  function byId(id) { return document.getElementById(id); }
+  function valueOrNull(id) { const value = byId(id).value; return value === "" ? null : Number(value); }
+  function status(text, error) { elements.saveMessage.textContent = text || ""; elements.saveMessage.style.color = error ? "var(--danger)" : "var(--accent-strong)"; }
+
+  function theoreticalAmount(component) {
+    if (component.kind === "mass") return { value: component.correctedMassG, unit: "g", text: F.mass(component.correctedMassG) };
+    const liters = component.kind === "stock" ? component.stockVolumeL : component.volumeL;
+    return { value: liters, unit: "L", text: F.volume(liters) };
+  }
+
+  function defaultActualUnit(component) {
+    if (component.kind === "mass") return component.correctedMassG < 1 ? "mg" : "g";
+    const liters = component.kind === "stock" ? component.stockVolumeL : component.volumeL;
+    return liters < 0.001 ? "µL" : liters < 1 ? "mL" : "L";
+  }
+
+  function componentDelta(component, actual) {
+    if (!actual || actual.amount == null || actual.amount === "") return "尚未記錄";
+    try {
+      const theory = theoreticalAmount(component);
+      const normalized = component.kind === "mass" ? app.Units.toGrams(actual.amount, actual.unit) : app.Units.toLiters(actual.amount, actual.unit);
+      if (!theory.value) return "差異無法計算";
+      const difference = (normalized - theory.value) / theory.value * 100;
+      return `${difference >= 0 ? "+" : ""}${F.number(difference, 2)}%`;
+    } catch (_error) { return "差異無法計算"; }
+  }
+
+  function renderComponents(saved) {
+    const actuals = saved && saved.components || [];
+    elements.componentList.innerHTML = currentResult.components.map((component, index) => {
+      const actual = actuals[index] || {};
+      const mass = component.kind === "mass";
+      const units = mass ? ["µg", "mg", "g"] : ["µL", "mL", "L"];
+      const selectedUnit = actual.unit || defaultActualUnit(component);
+      return `<div class="record-component" data-record-component="${index}">
+        <div class="record-component-grid">
+          <div><strong>${F.escapeHtml(component.reagent.zhName)}</strong><div class="muted">${F.escapeHtml(component.reagent.formula)}</div><div class="muted">理論：${theoreticalAmount(component).text}</div><div class="delta" data-component-delta>${F.escapeHtml(componentDelta(component, actual))}</div></div>
+          <label>實際用量<div class="input-pair"><input data-actual-amount type="number" min="0" step="any" value="${actual.amount == null ? "" : F.escapeHtml(actual.amount)}"><select data-actual-unit aria-label="實際用量單位">${units.map((unit) => `<option value="${unit}"${unit === selectedUnit ? " selected" : ""}>${unit}</option>`).join("")}</select></div></label>
+          <label>批號<input data-actual-lot maxlength="120" value="${F.escapeHtml(actual.lot || "")}"></label>
+          <label>效期<input data-actual-expiry type="date" value="${F.escapeHtml(actual.expiry || "")}"></label>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  function resetForm() {
+    elements.form.reset();
+    elements.id.value = "";
+    currentRecord = null;
+    elements.editState.textContent = "新增紀錄";
+    if (currentResult) {
+      elements.title.value = `${currentResult.buffer.name} ${new Date().toLocaleDateString("zh-TW")}`;
+      renderComponents(null);
+    }
+    updatePrintSummary();
+    status("");
+  }
+
+  function setCurrentResult(result, record) {
+    currentResult = app.Storage.clone(result);
+    elements.panel.hidden = false;
+    if (record) loadIntoForm(record); else resetForm();
+  }
+
+  function readComponents() {
+    return Array.from(elements.componentList.querySelectorAll("[data-record-component]")).map((row) => ({
+      reagentId: currentResult.components[Number(row.dataset.recordComponent)].reagent.id,
+      amount: row.querySelector("[data-actual-amount]").value === "" ? null : Number(row.querySelector("[data-actual-amount]").value),
+      unit: row.querySelector("[data-actual-unit]").value,
+      lot: row.querySelector("[data-actual-lot]").value.trim(),
+      expiry: row.querySelector("[data-actual-expiry]").value
+    }));
+  }
+
+  function readForm() {
+    return {
+      id: elements.id.value,
+      title: elements.title.value,
+      result: currentResult,
+      preparedAt: byId("record-prepared-at").value,
+      actualVolume: valueOrNull("record-actual-volume") == null ? null : { value: valueOrNull("record-actual-volume"), unit: byId("record-actual-volume-unit").value },
+      actualTemperatureC: valueOrNull("record-temperature"),
+      measuredPH: valueOrNull("record-ph"),
+      adjuster: byId("record-adjuster").value.trim(),
+      adjusterVolume: valueOrNull("record-adjuster-volume") == null ? null : { value: valueOrNull("record-adjuster-volume"), unit: byId("record-adjuster-volume-unit").value },
+      components: readComponents(),
+      notes: byId("record-notes").value
+    };
+  }
+
+  function loadIntoForm(record) {
+    currentRecord = app.Storage.clone(record);
+    currentResult = app.Storage.clone(record.result);
+    elements.id.value = record.id;
+    elements.title.value = record.title;
+    byId("record-prepared-at").value = record.preparedAt || "";
+    byId("record-actual-volume").value = record.actualVolume ? record.actualVolume.value : "";
+    byId("record-actual-volume-unit").value = record.actualVolume ? record.actualVolume.unit : "L";
+    byId("record-temperature").value = record.actualTemperatureC == null ? "" : record.actualTemperatureC;
+    byId("record-ph").value = record.measuredPH == null ? "" : record.measuredPH;
+    byId("record-adjuster").value = record.adjuster || "";
+    byId("record-adjuster-volume").value = record.adjusterVolume ? record.adjusterVolume.value : "";
+    byId("record-adjuster-volume-unit").value = record.adjusterVolume ? record.adjusterVolume.unit : "µL";
+    byId("record-notes").value = record.notes || "";
+    renderComponents(record);
+    elements.editState.textContent = `編輯修訂 v${record.revision}`;
+    updatePrintSummary(record);
+    status("");
+  }
+
+  function save(event) {
+    event.preventDefault();
+    try {
+      const saved = app.Records.save(readForm());
+      loadIntoForm(saved);
+      renderList();
+      status(`已儲存；目前修訂 v${saved.revision}。`);
+    } catch (error) { status(error.message, true); }
+  }
+
+  function measurementText(value, suffix) { return value == null || value === "" ? "尚未記錄" : `${F.number(Number(value), 4)}${suffix || ""}`; }
+
+  function updatePrintSummary(record) {
+    if (!currentResult) { elements.printSummary.innerHTML = ""; return; }
+    let data;
+    try { data = record || Object.assign(readForm(), { createdAt: "", updatedAt: "", revision: elements.id.value ? currentRecord && currentRecord.revision : 0 }); }
+    catch (_error) { return; }
+    const components = data.components || [];
+    elements.printSummary.innerHTML = `
+      <h2>實際配製紀錄</h2>
+      <div class="print-meta">
+        <p><strong>紀錄 ID：</strong>${F.escapeHtml(data.id || "尚未儲存")}</p><p><strong>標題：</strong>${F.escapeHtml(data.title || "尚未記錄")}</p>
+        <p><strong>配製時間：</strong>${F.escapeHtml(data.preparedAt || "尚未記錄")}</p><p><strong>修訂：</strong>${data.revision || "尚未儲存"}</p>
+        <p><strong>實際體積：</strong>${data.actualVolume ? `${F.number(data.actualVolume.value, 4)} ${F.escapeHtml(data.actualVolume.unit)}` : "尚未記錄"}</p><p><strong>操作溫度：</strong>${measurementText(data.actualTemperatureC, "°C")}</p>
+        <p><strong>實測 pH：</strong>${measurementText(data.measuredPH)}</p><p><strong>調整劑：</strong>${F.escapeHtml(data.adjuster || "尚未記錄")}${data.adjusterVolume ? `；${F.number(data.adjusterVolume.value, 4)} ${F.escapeHtml(data.adjusterVolume.unit)}` : ""}</p>
+        <p><strong>建立：</strong>${F.escapeHtml(data.createdAt || "尚未儲存")}</p><p><strong>修改：</strong>${F.escapeHtml(data.updatedAt || "尚未儲存")}</p>
+      </div>
+      <table><thead><tr><th>試劑</th><th>理論值</th><th>實際值</th><th>差異</th><th>批號／效期</th></tr></thead><tbody>${currentResult.components.map((component, index) => {
+        const actual = components[index] || {};
+        return `<tr><td>${F.escapeHtml(component.reagent.zhName)}<br><span class="muted">${F.escapeHtml(component.reagent.formula)}</span></td><td>${theoreticalAmount(component).text}</td><td>${actual.amount == null ? "尚未記錄" : `${F.number(actual.amount, 4)} ${F.escapeHtml(actual.unit)}`}</td><td>${F.escapeHtml(componentDelta(component, actual))}</td><td>${F.escapeHtml(actual.lot || "尚未記錄")}／${F.escapeHtml(actual.expiry || "尚未記錄")}</td></tr>`;
+      }).join("")}</tbody></table>
+      <p class="record-print-notes"><strong>備註：</strong>${F.escapeHtml(data.notes || "尚未記錄")}</p>
+      <p><strong>追溯資訊：</strong>BufferLab ${F.escapeHtml(currentResult.provenance.appVersion)}；資料 ${F.escapeHtml(currentResult.provenance.dataVersion)}；配方 ${F.escapeHtml(currentResult.provenance.recipeId)} v${F.escapeHtml(currentResult.provenance.recipeVersion)}；${currentResult.provenance.recipeStatus === "verified" ? "內建已驗證" : "使用者自訂／未經 BufferLab 驗證"}。</p>`;
+  }
+
+  function renderFilterOptions(records) {
+    const current = elements.bufferFilter.value;
+    const names = Array.from(new Set(records.map((item) => item.bufferName))).sort();
+    elements.bufferFilter.innerHTML = `<option value="">全部</option>${names.map((name) => `<option value="${F.escapeHtml(name)}">${F.escapeHtml(name)}</option>`).join("")}`;
+    if (names.includes(current)) elements.bufferFilter.value = current;
+  }
+
+  function renderList() {
+    const records = app.Storage.getRecords();
+    renderFilterOptions(records);
+    const query = elements.search.value.trim().toLocaleLowerCase("zh-TW");
+    const buffer = elements.bufferFilter.value;
+    const date = elements.dateFilter.value;
+    const filtered = records.filter((item) => {
+      const matchesText = !query || `${item.title} ${item.bufferName}`.toLocaleLowerCase("zh-TW").includes(query);
+      const matchesBuffer = !buffer || item.bufferName === buffer;
+      const matchesDate = !date || String(item.preparedAt || "").slice(0, 10) === date;
+      return matchesText && matchesBuffer && matchesDate;
+    });
+    elements.list.innerHTML = filtered.length ? filtered.map((item) => `
+      <article class="record-card">
+        <div class="record-card-header"><div><strong>${F.escapeHtml(item.title)}</strong><p>${F.escapeHtml(item.bufferName)}｜修訂 v${item.revision}｜${F.escapeHtml(item.preparedAt || "尚未記錄配製時間")}</p></div><span class="status-badge${item.result.provenance.recipeStatus === "verified" ? "" : " unverified"}">${item.result.provenance.recipeStatus === "verified" ? "內建配方" : "自訂未驗證"}</span></div>
+        <div class="record-actions"><button type="button" data-record-load="${F.escapeHtml(item.id)}">開啟</button><button type="button" data-record-copy="${F.escapeHtml(item.id)}">複製批次</button><button type="button" data-record-print-one="${F.escapeHtml(item.id)}">列印／PDF</button><button type="button" data-record-delete="${F.escapeHtml(item.id)}">刪除</button></div>
+      </article>`).join("") : `<p class="history-empty">沒有符合條件的配製紀錄。</p>`;
+  }
+
+  function openRecord(record, scroll) {
+    if (!record) return;
+    app.Controller.displayResult(record.result);
+    setCurrentResult(record.result, record);
+    if (scroll !== false) elements.panel.scrollIntoView({ behavior: app.Renderer.scrollBehavior(), block: "start" });
+  }
+
+  function bindEvents() {
+    elements.form.addEventListener("submit", save);
+    byId("record-new").addEventListener("click", resetForm);
+    byId("record-print").addEventListener("click", () => { updatePrintSummary(currentRecord); root.print(); });
+    elements.componentList.addEventListener("input", (event) => {
+      const row = event.target.closest("[data-record-component]");
+      if (row) {
+        const index = Number(row.dataset.recordComponent);
+        const actual = { amount: row.querySelector("[data-actual-amount]").value, unit: row.querySelector("[data-actual-unit]").value };
+        row.querySelector("[data-component-delta]").textContent = componentDelta(currentResult.components[index], actual);
+      }
+      updatePrintSummary();
+    });
+    elements.form.addEventListener("change", () => updatePrintSummary());
+    [elements.search, elements.bufferFilter, elements.dateFilter].forEach((node) => node.addEventListener(node === elements.search ? "input" : "change", renderList));
+    elements.list.addEventListener("click", (event) => {
+      const load = event.target.closest("[data-record-load]");
+      const copy = event.target.closest("[data-record-copy]");
+      const print = event.target.closest("[data-record-print-one]");
+      const remove = event.target.closest("[data-record-delete]");
+      if (load) openRecord(app.Records.get(load.dataset.recordLoad));
+      if (copy) { try { const saved = app.Records.duplicate(copy.dataset.recordCopy); renderList(); openRecord(saved); status("已建立可編輯的新批次副本。 "); } catch (error) { status(error.message, true); } }
+      if (print) { const record = app.Records.get(print.dataset.recordPrintOne); openRecord(record, false); updatePrintSummary(record); root.print(); }
+      if (remove) { const record = app.Records.get(remove.dataset.recordDelete); if (record && root.confirm(`確定刪除配製紀錄「${record.title}」？`)) { if (app.Records.remove(record.id)) { if (currentRecord && currentRecord.id === record.id) resetForm(); renderList(); } else status(app.Storage.getLastError(), true); } }
+    });
+  }
+
+  function init() {
+    elements = {
+      panel: byId("record-editor-panel"), form: byId("record-form"), id: byId("record-id"), title: byId("record-title"),
+      editState: byId("record-edit-state"), componentList: byId("record-component-list"), saveMessage: byId("record-save-message"),
+      printSummary: byId("record-print-summary"), search: byId("record-search"), bufferFilter: byId("record-buffer-filter"),
+      dateFilter: byId("record-date-filter"), list: byId("records-list")
+    };
+    bindEvents();
+    renderList();
+  }
+
+  app.RecordsUI = Object.freeze({ init, setCurrentResult, renderList });
+})(window);
+
+(function (root) {
+  "use strict";
+
+  const app = root.BufferLab;
+
+  function assert(condition, message) {
+    if (!condition) throw new Error(message || "斷言失敗");
+  }
+
+  function assertApproxEqual(actual, expected, tolerance, message) {
+    const scale = Math.max(1, Math.abs(actual), Math.abs(expected));
+    if (Math.abs(actual - expected) > tolerance * scale) {
+      throw new Error(`${message || "數值不符"}：預期 ${expected}，實際 ${actual}`);
+    }
+  }
+
+  function run() {
+    const tests = [];
+    function test(name, callback) {
+      try { callback(); tests.push({ name, passed: true }); }
+      catch (error) { tests.push({ name, passed: false, error: error.message }); }
+    }
+
+    test("M 與 mM 單位轉換", () => assertApproxEqual(app.Units.toMolar(50, "mM"), 0.05, 1e-9));
+    test("L、mL、µL 單位轉換", () => {
+      assertApproxEqual(app.Units.toLiters(500, "mL"), 0.5, 1e-9);
+      assertApproxEqual(app.Units.toLiters(1000, "µL"), 0.001, 1e-9);
+    });
+    test("PBS 體積縮放", () => {
+      const result = app.StandardRecipeEngine.calculate({ volumeL: 0.5, strength: 1, purities: {}, reagentOverrides: {} }, app.Buffers.pbs);
+      assertApproxEqual(result.components[0].moles, 0.0685, 1e-9);
+    });
+    test("1 L 1× PBS 範例", () => {
+      const result = app.StandardRecipeEngine.calculate({ volumeL: 1, strength: 1, purities: {}, reagentOverrides: {} }, app.Buffers.pbs);
+      assertApproxEqual(result.components[0].correctedMassG, 8.00628, 1e-9);
+      assertApproxEqual(result.components[1].correctedMassG, 0.20128851, 1e-9);
+    });
+    test("500 mL 1× PBS 範例", () => {
+      const result = app.StandardRecipeEngine.calculate({ volumeL: 0.5, strength: 1, purities: {}, reagentOverrides: {} }, app.Buffers.pbs);
+      assertApproxEqual(result.components[0].correctedMassG, 4.00314, 1e-9);
+    });
+    test("Henderson–Hasselbalch pH=pKa 比例", () => {
+      const buffer = app.Buffers.phosphate;
+      const result = app.DynamicBufferEngine.calculate({ volumeL: 1, concentrationM: 0.1, pH: 7.21, temperatureC: 25, useStock: false, acidReagentId: "nah2po4", baseReagentId: "na2hpo4", acidPurity: 100, basePurity: 100 }, buffer);
+      assertApproxEqual(result.calculation.ratio, 1, 1e-9);
+      assertApproxEqual(result.calculation.acidConcentrationM + result.calculation.baseConcentrationM, 0.1, 1e-9);
+    });
+    test("Henderson–Hasselbalch 差一 pH 單位比例", () => {
+      const result = app.DynamicBufferEngine.calculate({ volumeL: 1, concentrationM: 0.1, pH: 8.21, temperatureC: 25, useStock: false, acidReagentId: "nah2po4", baseReagentId: "na2hpo4", acidPurity: 100, basePurity: 100 }, app.Buffers.phosphate);
+      assertApproxEqual(result.calculation.ratio, 10, 1e-9);
+    });
+    test("100 mL 0.1 M phosphate 範例", () => {
+      const result = app.DynamicBufferEngine.calculate({ volumeL: 0.1, concentrationM: 0.1, pH: 7.2, temperatureC: 25, useStock: false, acidReagentId: "nah2po4", baseReagentId: "na2hpo4", acidPurity: 100, basePurity: 100 }, app.Buffers.phosphate);
+      assertApproxEqual(result.components[0].moles + result.components[1].moles, 0.01, 1e-9);
+    });
+    test("1 L 50 mM Tris 範例", () => {
+      const result = app.DynamicBufferEngine.calculate({ volumeL: 1, concentrationM: 0.05, pH: 8, temperatureC: 25, useStock: false, acidReagentId: "tris_hcl", baseReagentId: "tris", acidPurity: 100, basePurity: 100 }, app.Buffers["tris-buffer"]);
+      assertApproxEqual(result.components[0].moles + result.components[1].moles, 0.05, 1e-9);
+    });
+    test("98% 純度校正", () => {
+      const mass = app.Units.molesToMass(1, 100, 98);
+      assertApproxEqual(mass.correctedG, 100 / 0.98, 1e-9);
+    });
+    test("無水物與水合物質量不同", () => {
+      const dry = app.Units.molesToMass(0.1, app.Reagents.na2hpo4.molarMass, 100).correctedG;
+      const hydrate = app.Units.molesToMass(0.1, app.Reagents.na2hpo4_7h2o.molarMass, 100).correctedG;
+      assert(hydrate > dry, "七水合物質量應高於無水物");
+    });
+    test("庫存液體積", () => assertApproxEqual(app.Units.stockVolumeLiters(0.05, 1), 0.05, 1e-9));
+    test("庫存液超過最終體積時被攔截", () => {
+      const component = { reagent: app.Reagents.hepes, kind: "stock", stockVolumeL: 0.2 };
+      const messages = app.Validation.validateResult({ components: [component] }, { volumeL: 0.1 });
+      assert(app.Validation.hasErrors(messages), "超量庫存液應產生錯誤");
+    });
+    test("非法輸入被攔截", () => {
+      const messages = app.Validation.validateCommon({ volumeL: 0, strength: 1 }, app.Buffers.pbs);
+      assert(app.Validation.hasErrors(messages), "零體積應產生錯誤");
+    });
+    test("Tris 溫度修正與範圍", () => {
+      const messages = [];
+      assertApproxEqual(app.DynamicBufferEngine.calculatePka(app.Buffers["tris-buffer"], 37, messages).pKa, 7.724, 1e-9);
+      const outMessages = [];
+      assertApproxEqual(app.DynamicBufferEngine.calculatePka(app.Buffers["tris-buffer"], 50, outMessages).pKa, 8.06, 1e-9);
+      assert(outMessages.some((item) => item.code === "TRIS_TEMPERATURE_RANGE"), "超界應警告");
+    });
+    test("非 Tris 溫度不會被無聲忽略", () => {
+      const result = app.DynamicBufferEngine.calculate({ volumeL: 1, concentrationM: 0.02, pH: 7.4, temperatureC: 4, useStock: false, singlePurity: 100 }, app.Buffers.hepes);
+      assert(result.calculation.temperatureApplied === false, "HEPES 不應宣稱已套用溫度修正");
+      assert(result.messages.some((item) => item.code === "NO_TEMPERATURE_MODEL"), "非 25°C 應提示未套用溫度修正");
+    });
+    test("HEPES 不輸出精確滴定體積", () => {
+      const result = app.DynamicBufferEngine.calculate({ volumeL: 0.5, concentrationM: 0.02, pH: 7.4, temperatureC: 25, useStock: false, singlePurity: 100 }, app.Buffers.hepes);
+      assert(result.components.every((item) => item.stockVolumeL == null), "固體模式不應產生滴定體積");
+      assert(result.messages.some((item) => item.code === "TITRATION_REQUIRED"), "應要求實測滴定");
+      assertApproxEqual(result.components[0].correctedMassG, 2.383, 1e-9);
+    });
+    test("localStorage 歷史限制為 10 筆並可還原", () => {
+      const key = app.Constants.STORAGE_KEYS.history;
+      const original = root.localStorage.getItem(key);
+      try {
+        root.localStorage.setItem(key, "[]");
+        for (let index = 0; index < 12; index += 1) app.Storage.addHistory({ id: String(index) });
+        assert(app.Storage.getHistory().length === 10, "歷史紀錄應限制為 10 筆");
+      } finally {
+        if (original == null) root.localStorage.removeItem(key);
+        else root.localStorage.setItem(key, original);
+      }
+    });
+    test("V2 結果包含完整追溯快照", () => {
+      const result = app.StandardRecipeEngine.calculate({ volumeL: 1, strength: 1, purities: {}, reagentOverrides: {} }, app.Buffers.pbs);
+      assert(result.schemaVersion === 2, "結果 schema 應為 V2");
+      assert(result.provenance.recipeSnapshot.id === "pbs", "應保存配方快照");
+      assert(result.provenance.reagentSnapshots.length === result.components.length, "應保存所有試劑快照");
+      assert(result.provenance.recipeStatus === "verified", "內建配方應標示已驗證");
+    });
+    test("質量單位轉換", () => {
+      assertApproxEqual(app.Units.toGrams(250, "mg"), 0.25, 1e-9);
+      assertApproxEqual(app.Units.fromGrams(0.001, "µg"), 1000, 1e-9);
+    });
+    test("自訂來源連結拒絕危險協定", () => {
+      let rejected = false;
+      try { app.Library.safeUrl("javascript:alert(1)"); } catch (_error) { rejected = true; }
+      assert(rejected, "javascript URL 必須被拒絕");
+      assert(app.Formatter.escapeHtml("<img onerror=1>").includes("&lt;"), "自訂文字必須可安全轉義");
+    });
+    test("自訂固定配方可縮放", () => {
+      const recipe = app.Library.validateRecipe({ name: "測試固定配方", modelType: "standard", defaultPH: 7, baseVolumeL: 1, baseStrength: 1, components: [{ reagentId: "nacl", kind: "moles", amount: 0.1 }] });
+      const result = app.StandardRecipeEngine.calculate({ volumeL: 0.5, strength: 1, purities: {}, reagentOverrides: {} }, recipe);
+      assertApproxEqual(result.components[0].moles, 0.05, 1e-9);
+      assert(result.provenance.recipeStatus === "user-unverified", "自訂配方必須標示未驗證");
+    });
+    test("自訂成對與滴定模型可計算", () => {
+      const paired = app.Library.validateRecipe({ name: "測試成對配方", modelType: "paired", defaultPH: 7.2, defaultConcentrationM: 0.1, pKa25: 7.2, rangeLow: 6.2, rangeHigh: 8.2, acidReagentId: "nah2po4", baseReagentId: "na2hpo4", acidLabel: "Acid", baseLabel: "Base" });
+      const pairedResult = app.DynamicBufferEngine.calculate({ volumeL: 1, concentrationM: 0.1, pH: 7.2, temperatureC: 25, useStock: false, acidReagentId: "nah2po4", baseReagentId: "na2hpo4", acidPurity: 100, basePurity: 100 }, paired);
+      assertApproxEqual(pairedResult.calculation.ratio, 1, 1e-9);
+      const titration = app.Library.validateRecipe({ name: "測試滴定配方", modelType: "titration", defaultPH: 7.4, defaultConcentrationM: 0.02, pKa25: 7.56, rangeLow: 6.8, rangeHigh: 8.2, reagentId: "hepes", acidLabel: "HEPES-H", baseLabel: "HEPES-" });
+      const titrationResult = app.DynamicBufferEngine.calculate({ volumeL: 0.1, concentrationM: 0.02, pH: 7.4, temperatureC: 25, useStock: false, singlePurity: 100 }, titration);
+      assert(titrationResult.messages.some((item) => item.code === "TITRATION_REQUIRED"), "滴定模式應保留實測提醒");
+    });
+    test("配製紀錄可修改並保留修訂次數與快照", () => {
+      const key = app.Constants.STORAGE_KEYS.records;
+      const original = root.localStorage.getItem(key);
+      try {
+        root.localStorage.setItem(key, "[]");
+        const result = app.StandardRecipeEngine.calculate({ volumeL: 1, strength: 1, purities: {}, reagentOverrides: {} }, app.Buffers.pbs);
+        const first = app.Records.save({ title: "PBS 批次", result, components: [] });
+        const second = app.Records.save(Object.assign({}, first, { title: "PBS 批次修訂" }));
+        assert(second.id === first.id, "修改時不可更換 ID");
+        assert(second.revision === 2, "修改後修訂次數應增加");
+        assert(second.result.provenance.recipeSnapshot.name === app.Buffers.pbs.name, "紀錄應保存配方快照");
+      } finally {
+        if (original == null) root.localStorage.removeItem(key); else root.localStorage.setItem(key, original);
+      }
+    });
+    test("複製批次會建立新 ID", () => {
+      const key = app.Constants.STORAGE_KEYS.records;
+      const original = root.localStorage.getItem(key);
+      try {
+        root.localStorage.setItem(key, "[]");
+        const result = app.StandardRecipeEngine.calculate({ volumeL: 1, strength: 1, purities: {}, reagentOverrides: {} }, app.Buffers.pbs);
+        const source = app.Records.save({ title: "來源批次", result, components: [] });
+        const copy = app.Records.duplicate(source.id);
+        assert(copy.id !== source.id, "副本必須使用新 ID");
+        assert(copy.revision === 1, "副本修訂應從 1 開始");
+      } finally {
+        if (original == null) root.localStorage.removeItem(key); else root.localStorage.setItem(key, original);
+      }
+    });
+    test("V1 遷移可重複執行且不重複資料", () => {
+      const v2History = app.Constants.STORAGE_KEYS.history;
+      const migrated = app.Constants.STORAGE_KEYS.migrated;
+      const v1History = app.Constants.LEGACY_STORAGE_KEYS.history;
+      const backup = [v2History, migrated, v1History].map((key) => [key, root.localStorage.getItem(key)]);
+      try {
+        root.localStorage.removeItem(v2History);
+        root.localStorage.removeItem(migrated);
+        root.localStorage.setItem(v1History, JSON.stringify([{ id: "legacy-one", state: { bufferKey: "pbs" } }]));
+        app.Storage.migrateV1();
+        app.Storage.migrateV1();
+        assert(app.Storage.getHistory().filter((item) => item.id === "legacy-one").length === 1, "遷移不得產生重複紀錄");
+        assert(root.localStorage.getItem(v1History) != null, "遷移不得刪除 V1 資料");
+      } finally {
+        backup.forEach(([key, value]) => { if (value == null) root.localStorage.removeItem(key); else root.localStorage.setItem(key, value); });
+      }
+    });
+    test("損壞的本機資料不阻止啟動", () => {
+      const key = app.Constants.STORAGE_KEYS.records;
+      const original = root.localStorage.getItem(key);
+      try {
+        root.localStorage.setItem(key, "{not-json");
+        assert(Array.isArray(app.Storage.getRecords()) && app.Storage.getRecords().length === 0, "損壞資料應回復空集合");
+      } finally {
+        if (original == null) root.localStorage.removeItem(key); else root.localStorage.setItem(key, original);
+      }
+    });
+    test("無效實測 pH 被 schema 拒絕", () => {
+      const result = app.StandardRecipeEngine.calculate({ volumeL: 1, strength: 1, purities: {}, reagentOverrides: {} }, app.Buffers.pbs);
+      let rejected = false;
+      try { app.Records.save({ title: "錯誤紀錄", result, measuredPH: 15, components: [] }); } catch (_error) { rejected = true; }
+      assert(rejected, "超出範圍的實測 pH 必須被拒絕");
+    });
+    test("TAE 固定質量與固定體積縮放", () => {
+      const result = app.StandardRecipeEngine.calculate({ volumeL: 1, strength: 1, purities: {}, reagentOverrides: {} }, app.Buffers.tae);
+      assertApproxEqual(result.components[0].theoreticalMassG, 4.84, 1e-9);
+      assert(result.components[1].kind === "volume" && result.components[2].kind === "volume", "液體組成應使用 volume 類型");
+      assertApproxEqual(result.components[1].volumeL, 0.001142, 1e-9);
+      assertApproxEqual(result.components[2].volumeL, 0.002, 1e-9);
+    });
+    test("TBE 固定質量與固定體積縮放", () => {
+      const result = app.StandardRecipeEngine.calculate({ volumeL: 1, strength: 0.5, purities: {}, reagentOverrides: {} }, app.Buffers.tbe);
+      assertApproxEqual(result.components[0].theoreticalMassG, 5.4, 1e-9);
+      assertApproxEqual(result.components[1].theoreticalMassG, 2.75, 1e-9);
+      assert(result.components[2].kind === "volume", "EDTA 應使用 volume 類型");
+      assertApproxEqual(result.components[2].volumeL, 0.002, 1e-9);
+    });
+    test("水合物切換會改用正確的分子量與快照", () => {
+      const result = app.StandardRecipeEngine.calculate({ volumeL: 1, strength: 1, purities: {}, reagentOverrides: { na2hpo4: "na2hpo4_7h2o" } }, app.Buffers.pbs);
+      const component = result.components.find((item) => item.reagent.id === "na2hpo4_7h2o");
+      assert(component, "應使用七水合物");
+      assertApproxEqual(component.theoreticalMassG, 2.14456, 1e-9);
+      assert(result.provenance.reagentSnapshots.some((item) => item.id === "na2hpo4_7h2o"), "快照應保存實際使用的水合物");
+      assert(result.components.filter((item) => item.reagent.id !== "na2hpo4_7h2o").length === 3, "其他組成不應受影響");
+    });
+    test("液體試劑體積總和超過最終體積時被攔截", () => {
+      const excessive = app.StandardRecipeEngine.calculate({ volumeL: 1, strength: 500, purities: {}, reagentOverrides: {} }, app.Buffers.tae);
+      const normal = app.StandardRecipeEngine.calculate({ volumeL: 1, strength: 1, purities: {}, reagentOverrides: {} }, app.Buffers.tae);
+      assert(app.Validation.hasErrors(app.Validation.validateResult(excessive, { volumeL: 1 })), "超量液體應產生錯誤");
+      assert(!app.Validation.hasErrors(app.Validation.validateResult(normal, { volumeL: 1 })), "正常配方不可誤判");
+    });
+    test("內建配方的 key 必須等於 id", () => {
+      Object.entries(app.Buffers).forEach(([key, buffer]) => assert(key === buffer.id, `配方 key 不一致：${key}`));
+    });
+    test("每個內建試劑都有化學式或明確說明", () => {
+      Object.values(app.Reagents).forEach((reagent) => assert(typeof reagent.formula === "string" && reagent.formula.trim() && reagent.formula !== "—", `試劑缺少化學式：${reagent.id}`));
+    });
+    test("SSC 可切換無水檸檬酸三鈉", () => {
+      const hydrated = app.StandardRecipeEngine.calculate({ volumeL: 1, strength: 1, purities: {}, reagentOverrides: {} }, app.Buffers.ssc);
+      const anhydrous = app.StandardRecipeEngine.calculate({ volumeL: 1, strength: 1, purities: {}, reagentOverrides: { sodium_citrate_2h2o: "sodium_citrate" } }, app.Buffers.ssc);
+      const hydratedComponent = hydrated.components.find((item) => item.reagent.id === "sodium_citrate_2h2o");
+      const anhydrousComponent = anhydrous.components.find((item) => item.reagent.id === "sodium_citrate");
+      assert(anhydrousComponent.correctedMassG < hydratedComponent.correctedMassG, "無水鹽質量應較小");
+      assertApproxEqual(anhydrousComponent.correctedMassG / hydratedComponent.correctedMassG, 258.07 / 294.10, 1e-9);
+    });
+    test("KH₂PO₄／Na₂HPO₄ phosphate 配方符合近似前提", () => {
+      const buffer = app.Buffers["phosphate-kh2po4"];
+      const result = app.DynamicBufferEngine.calculate({ volumeL: 1, concentrationM: 0.1, pH: 7.2, temperatureC: 25, useStock: false, acidReagentId: "kh2po4", baseReagentId: "na2hpo4", acidPurity: 100, basePurity: 100 }, buffer);
+      assertApproxEqual(result.components[0].moles + result.components[1].moles, 0.1, 1e-9);
+      assert(result.components.every((item) => !["nacl", "kcl"].includes(item.reagent.id)), "配方不可包含 NaCl 或 KCl");
+      assert(result.messages.some((item) => item.code === "POLYPROTIC_APPROXIMATION"), "應提示多質子近似");
+    });
+    test("兩個 phosphate 配方都提示多質子近似", () => {
+      [app.Buffers.phosphate, app.Buffers["phosphate-kh2po4"]].forEach((buffer) => {
+        const acid = buffer.dynamic.acidOptions[0];
+        const result = app.DynamicBufferEngine.calculate({ volumeL: 1, concentrationM: 0.1, pH: 7.2, temperatureC: 25, useStock: false, acidReagentId: acid, baseReagentId: "na2hpo4", acidPurity: 100, basePurity: 100 }, buffer);
+        assert(result.messages.some((item) => item.code === "POLYPROTIC_APPROXIMATION"), `${buffer.id} 應提示多質子近似`);
+      });
+    });
+    test("刪除自訂配方不影響既有紀錄快照", () => {
+      const recipeKey = app.Constants.STORAGE_KEYS.customRecipes;
+      const recordKey = app.Constants.STORAGE_KEYS.records;
+      const recipeBackup = root.localStorage.getItem(recipeKey);
+      const recordBackup = root.localStorage.getItem(recordKey);
+      try {
+        root.localStorage.setItem(recipeKey, "[]");
+        root.localStorage.setItem(recordKey, "[]");
+        const recipe = app.Library.saveRecipe({ name: "可刪除配方", modelType: "standard", defaultPH: 7, baseVolumeL: 1, baseStrength: 1, components: [{ reagentId: "nacl", kind: "moles", amount: 0.1 }] });
+        const result = app.StandardRecipeEngine.calculate({ volumeL: 1, strength: 1, purities: {}, reagentOverrides: {} }, recipe);
+        const record = app.Records.save({ title: "快照紀錄", result, components: [] });
+        app.Library.deleteRecipe(recipe.id);
+        assert(app.Records.get(record.id).result.provenance.recipeSnapshot.name === "可刪除配方", "紀錄快照應保留");
+      } finally {
+        if (recipeBackup == null) root.localStorage.removeItem(recipeKey); else root.localStorage.setItem(recipeKey, recipeBackup);
+        if (recordBackup == null) root.localStorage.removeItem(recordKey); else root.localStorage.setItem(recordKey, recordBackup);
+      }
+    });
+
+    const passed = tests.filter((item) => item.passed).length;
+    return { tests, passed, failed: tests.length - passed, total: tests.length };
+  }
+
+  function render(container) {
+    const result = run();
+    document.documentElement.dataset.testStatus = result.failed === 0 ? "passed" : "failed";
+    container.innerHTML = `<p class="${result.failed === 0 ? "test-pass" : "test-fail"}"><strong>${result.passed}/${result.total} 通過</strong></p><ul>${result.tests.map((item) => `<li class="${item.passed ? "test-pass" : "test-fail"}">${item.passed ? "✓" : "✕"} ${app.Formatter.escapeHtml(item.name)}${item.error ? `：${app.Formatter.escapeHtml(item.error)}` : ""}</li>`).join("")}</ul>`;
+    return result;
+  }
+
+  app.TestRunner = Object.freeze({ assertApproxEqual, run, render });
+})(window);
+
+(function (root) {
+  "use strict";
+
+  const app = root.BufferLab;
+  const F = app.Formatter;
+  const hydrateGroups = Object.freeze({
+    na2hpo4: ["na2hpo4", "na2hpo4_2h2o", "na2hpo4_7h2o", "na2hpo4_12h2o"],
+    sodium_citrate_2h2o: ["sodium_citrate_2h2o", "sodium_citrate"]
+  });
+
+  let elements;
+  let currentResult = null;
+
+  function byId(id) { return document.getElementById(id); }
+  function setHidden(element, hidden) { element.hidden = Boolean(hidden); }
+
+  function cacheElements() {
+    elements = {
+      form: byId("buffer-form"), buffer: byId("buffer-select"), bufferHelp: byId("buffer-help"), mode: byId("mode-display"),
+      volume: byId("volume-input"), volumeUnit: byId("volume-unit"), strength: byId("strength-input"), pH: byId("ph-input"),
+      concentration: byId("concentration-input"), concentrationUnit: byId("concentration-unit"), temperature: byId("temperature-input"),
+      prepMethod: byId("prep-method"), standardFields: byId("standard-fields"), phField: byId("ph-field"), concentrationField: byId("concentration-field"),
+      temperatureField: byId("temperature-field"), prepMethodField: byId("prep-method-field"), pairedSettings: byId("paired-settings"),
+      standardReagentSettings: byId("standard-reagent-settings"), standardReagentList: byId("standard-reagent-list"), singleSettings: byId("single-settings"),
+      acidReagent: byId("acid-reagent"), baseReagent: byId("base-reagent"), singleReagent: byId("single-reagent"),
+      acidPurity: byId("acid-purity"), basePurity: byId("base-purity"), singlePurity: byId("single-purity"),
+      acidStock: byId("acid-stock"), baseStock: byId("base-stock"), singleStock: byId("single-stock"),
+      resultPanel: byId("result-panel"), recipeOutput: byId("recipe-output"), messages: byId("message-summary"),
+      historyList: byId("history-list"), example: byId("example-select"), theme: byId("theme-toggle"), tests: byId("developer-tests"), storageNotice: byId("storage-notice")
+    };
+  }
+
+  function selectedBufferEntry() {
+    return { key: elements.buffer.value, buffer: app.Library.getBuffer(elements.buffer.value) };
+  }
+
+  function fillSelect(select, reagentIds) {
+    select.innerHTML = reagentIds.map((id) => {
+      const reagent = app.Library.getReagent(id);
+      return `<option value="${F.escapeHtml(id)}">${F.escapeHtml(reagent.zhName)}｜${F.escapeHtml(reagent.formula)}｜${F.number(reagent.molarMass, 3)} g/mol</option>`;
+    }).join("");
+  }
+
+  function renderStandardReagents(buffer) {
+    elements.standardReagentList.innerHTML = buffer.standardRecipe.components.map((component) => {
+      const reagent = app.Library.getReagent(component.reagentId);
+      const variants = hydrateGroups[component.reagentId];
+      const selector = variants ? `<select data-standard-reagent="${F.escapeHtml(component.reagentId)}">${variants.map((id) => {
+        const item = app.Library.getReagent(id);
+        return `<option value="${F.escapeHtml(id)}">${F.escapeHtml(item.zhName)}｜${F.escapeHtml(item.formula)}｜${F.number(item.molarMass, 3)} g/mol</option>`;
+      }).join("")}</select>` : `<input type="text" value="${F.escapeHtml(reagent.zhName)}｜${F.escapeHtml(reagent.formula)}" readonly>`;
+      const purity = reagent.physicalForm === "solid" ? `<label>純度<div class="input-suffix"><input data-standard-purity="${F.escapeHtml(component.reagentId)}" type="number" min="0.01" max="100" step="0.01" value="${reagent.purityDefault}"><span>%</span></div></label>` : `<p class="field-help">依來源配方以體積量取。</p>`;
+      return `<div class="field"><label>${F.escapeHtml(reagent.zhName)}</label>${selector}${purity}</div>`;
+    }).join("");
+  }
+
+  function updatePrepUI() {
+    const useStock = elements.prepMethod.value === "stock";
+    document.querySelectorAll(".solid-only").forEach((node) => node.classList.toggle("hidden", useStock));
+    document.querySelectorAll(".stock-only").forEach((node) => node.classList.toggle("hidden", !useStock));
+  }
+
+  function updateBufferUI(useDefaults) {
+    const { buffer } = selectedBufferEntry();
+    const standard = buffer.mode === "standard";
+    elements.mode.value = standard ? "標準配方縮放" : buffer.dynamic.strategy === "paired" ? "動態成對試劑" : "動態滴定指引";
+    elements.bufferHelp.textContent = `${buffer.referenceNote} 建議 pH：${buffer.defaultPH}。`;
+    setHidden(elements.standardFields, !standard);
+    setHidden(elements.standardReagentSettings, !standard);
+    setHidden(elements.phField, standard);
+    setHidden(elements.concentrationField, standard);
+    setHidden(elements.temperatureField, standard);
+    setHidden(elements.prepMethodField, standard);
+    setHidden(elements.pairedSettings, standard || buffer.dynamic && buffer.dynamic.strategy !== "paired");
+    setHidden(elements.singleSettings, standard || buffer.dynamic && buffer.dynamic.strategy !== "titration");
+
+    if (standard) {
+      renderStandardReagents(buffer);
+      if (useDefaults) elements.strength.value = buffer.standardRecipe.strengthOptions.includes(1) ? 1 : buffer.standardRecipe.baseStrength;
+    } else {
+      elements.standardReagentList.innerHTML = "";
+      if (useDefaults) {
+        elements.pH.value = buffer.defaultPH;
+        elements.concentration.value = buffer.defaultConcentrationM * 1000;
+        elements.concentrationUnit.value = "mM";
+        elements.temperature.value = 25;
+        elements.prepMethod.value = "solid";
+      }
+      if (buffer.dynamic.strategy === "paired") {
+        fillSelect(elements.acidReagent, buffer.dynamic.acidOptions);
+        fillSelect(elements.baseReagent, buffer.dynamic.baseOptions);
+      } else {
+        fillSelect(elements.singleReagent, [buffer.dynamic.reagentId]);
+      }
+    }
+    updatePrepUI();
+  }
+
+  function populateBuffers() {
+    const selected = elements.buffer.value;
+    elements.buffer.innerHTML = Object.entries(app.Library.allBuffers()).map(([key, buffer]) => `<option value="${F.escapeHtml(key)}">${F.escapeHtml(buffer.name)}${buffer.builtIn ? "" : "｜自訂未驗證"}</option>`).join("");
+    if (selected && app.Library.getBuffer(selected)) elements.buffer.value = selected;
+  }
+
+  function clearErrors() {
+    document.querySelectorAll(".field-error").forEach((node) => { node.textContent = ""; });
+  }
+
+  function showFieldErrors(messages) {
+    clearErrors();
+    messages.filter((item) => item.field).forEach((item) => {
+      const node = document.querySelector(`[data-error-for="${item.field}"]`);
+      if (node && !node.textContent) node.textContent = item.text;
+    });
+  }
+
+  function readStandardOverrides() {
+    const purities = {};
+    const reagentOverrides = {};
+    elements.standardReagentList.querySelectorAll("[data-standard-purity]").forEach((node) => { purities[node.dataset.standardPurity] = Number(node.value); });
+    elements.standardReagentList.querySelectorAll("[data-standard-reagent]").forEach((node) => { reagentOverrides[node.dataset.standardReagent] = node.value; });
+    return { purities, reagentOverrides };
+  }
+
+  function readInput() {
+    const { key, buffer } = selectedBufferEntry();
+    let volumeL = NaN;
+    let concentrationM = NaN;
+    try { volumeL = app.Units.toLiters(elements.volume.value, elements.volumeUnit.value); } catch (_error) { volumeL = NaN; }
+    if (buffer.mode === "dynamic") {
+      try { concentrationM = app.Units.toMolar(elements.concentration.value, elements.concentrationUnit.value); } catch (_error) { concentrationM = NaN; }
+    }
+    const input = {
+      bufferKey: key,
+      volumeL,
+      strength: Number(elements.strength.value),
+      concentrationM,
+      pH: Number(elements.pH.value),
+      temperatureC: Number(elements.temperature.value),
+      useStock: elements.prepMethod.value === "stock",
+      acidReagentId: elements.acidReagent.value,
+      baseReagentId: elements.baseReagent.value,
+      acidPurity: Number(elements.acidPurity.value),
+      basePurity: Number(elements.basePurity.value),
+      singlePurity: Number(elements.singlePurity.value),
+      acidStockM: Number(elements.acidStock.value),
+      baseStockM: Number(elements.baseStock.value),
+      singleStockM: Number(elements.singleStock.value)
+    };
+    Object.assign(input, readStandardOverrides());
+    return { input, buffer };
+  }
+
+  function additionalValidation(input, buffer) {
+    const messages = [];
+    if (buffer.mode === "standard") {
+      Object.entries(input.purities).forEach(([id, purity]) => {
+        const issue = app.Validation.validatePurity(purity, null);
+        if (issue) issue.text = `${app.Library.getReagent(id).zhName}：${issue.text}`;
+        if (issue) messages.push(issue);
+      });
+      return messages;
+    }
+    if (input.useStock) {
+      const stocks = buffer.dynamic.strategy === "paired" ? [input.acidStockM, input.baseStockM] : [input.singleStockM];
+      if (stocks.some((value) => !Number.isFinite(value) || value <= 0)) messages.push(app.Validation.message("error", "INVALID_STOCK", "庫存液濃度必須大於 0。"));
+    } else {
+      const values = buffer.dynamic.strategy === "paired" ? [[input.acidPurity, "acidPurity"], [input.basePurity, "basePurity"]] : [[input.singlePurity, "singlePurity"]];
+      values.forEach(([value, field]) => { const issue = app.Validation.validatePurity(value, field); if (issue) messages.push(issue); });
+    }
+    return messages;
+  }
+
+  function captureFormState() {
+    const overrides = readStandardOverrides();
+    return {
+      bufferKey: elements.buffer.value, volume: elements.volume.value, volumeUnit: elements.volumeUnit.value,
+      strength: elements.strength.value, pH: elements.pH.value, concentration: elements.concentration.value,
+      concentrationUnit: elements.concentrationUnit.value, temperature: elements.temperature.value, prepMethod: elements.prepMethod.value,
+      acidReagent: elements.acidReagent.value, baseReagent: elements.baseReagent.value,
+      acidPurity: elements.acidPurity.value, basePurity: elements.basePurity.value, singlePurity: elements.singlePurity.value,
+      acidStock: elements.acidStock.value, baseStock: elements.baseStock.value, singleStock: elements.singleStock.value,
+      purities: overrides.purities, reagentOverrides: overrides.reagentOverrides
+    };
+  }
+
+  function historySummary(result) {
+    return result.mode === "standard" ? `${F.volume(result.input.volumeL)} · ${F.number(result.input.strength, 3)}×` : `${F.volume(result.input.volumeL)} · ${F.concentration(result.input.concentrationM)} · pH ${F.number(result.input.pH, 2)}`;
+  }
+
+  function showStorageNotice() {
+    const error = app.Storage.getLastError();
+    if (!error) return;
+    elements.storageNotice.hidden = false;
+    elements.storageNotice.textContent = error;
+  }
+
+  function calculate(saveHistory) {
+    const { input, buffer } = readInput();
+    let messages = app.Validation.validateCommon(input, buffer).concat(additionalValidation(input, buffer));
+    showFieldErrors(messages);
+    if (app.Validation.hasErrors(messages)) {
+      setHidden(elements.resultPanel, false);
+      elements.recipeOutput.innerHTML = "";
+      app.Renderer.renderMessages(elements.messages, messages);
+      elements.resultPanel.scrollIntoView({ behavior: app.Renderer.scrollBehavior(), block: "start" });
+      return null;
+    }
+
+    try {
+      const result = buffer.mode === "standard" ? app.StandardRecipeEngine.calculate(input, buffer) : app.DynamicBufferEngine.calculate(input, buffer);
+      messages = messages.concat(result.messages, app.Validation.validateResult(result, input));
+      result.messages = messages;
+      if (app.Validation.hasErrors(messages)) {
+        currentResult = null;
+        setHidden(elements.resultPanel, false);
+        app.Renderer.renderMessages(elements.messages, messages);
+        elements.recipeOutput.innerHTML = "";
+        elements.resultPanel.scrollIntoView({ behavior: app.Renderer.scrollBehavior(), block: "start" });
+        return null;
+      }
+      currentResult = result;
+      setHidden(elements.resultPanel, false);
+      app.Renderer.renderMessages(elements.messages, messages);
+      app.Renderer.renderRecipe(elements.recipeOutput, result);
+      app.RecordsUI.setCurrentResult(result);
+      if (saveHistory !== false) {
+        if (!app.Storage.addHistory({ id: `${Date.now()}-${Math.random().toString(16).slice(2)}`, name: buffer.name, summary: historySummary(result), createdAt: result.createdAt, status: buffer.status, state: captureFormState() })) showStorageNotice();
+        renderHistory();
+      }
+      elements.resultPanel.scrollIntoView({ behavior: app.Renderer.scrollBehavior(), block: "start" });
+      return result;
+    } catch (error) {
+      messages.push(app.Validation.message("error", "CALCULATION_FAILED", error.message || "計算失敗。"));
+      app.Renderer.renderMessages(elements.messages, messages);
+      elements.recipeOutput.innerHTML = "";
+      setHidden(elements.resultPanel, false);
+      return null;
+    }
+  }
+
+  function renderHistory() {
+    const history = app.Storage.getHistory();
+    elements.historyList.innerHTML = history.length ? history.map((entry) => `
+      <article class="history-item">
+        <strong>${F.escapeHtml(entry.name || "未命名計算")}</strong>${entry.status === "user-unverified" ? `<span class="status-badge unverified">自訂未驗證</span>` : ""}<span>${F.escapeHtml(entry.summary || "資料不完整")}</span><span>${entry.createdAt ? new Date(entry.createdAt).toLocaleString("zh-TW") : "時間未記錄"}</span>
+        <div class="history-actions"><button type="button" data-history-load="${F.escapeHtml(entry.id)}">載入</button><button type="button" data-history-delete="${F.escapeHtml(entry.id)}">刪除</button></div>
+      </article>`).join("") : `<p class="history-empty">尚無計算紀錄。完成計算後會保留最近 10 筆。</p>`;
+  }
+
+  function restoreState(state) {
+    if (!state || !app.Library.getBuffer(state.bufferKey)) return;
+    elements.buffer.value = app.Library.getBuffer(state.bufferKey).id;
+    updateBufferUI(true);
+    const values = [[elements.volume, state.volume], [elements.volumeUnit, state.volumeUnit], [elements.strength, state.strength], [elements.pH, state.pH], [elements.concentration, state.concentration], [elements.concentrationUnit, state.concentrationUnit], [elements.temperature, state.temperature], [elements.prepMethod, state.prepMethod], [elements.acidReagent, state.acidReagent], [elements.baseReagent, state.baseReagent], [elements.acidPurity, state.acidPurity], [elements.basePurity, state.basePurity], [elements.singlePurity, state.singlePurity], [elements.acidStock, state.acidStock], [elements.baseStock, state.baseStock], [elements.singleStock, state.singleStock]];
+    values.forEach(([node, value]) => { if (value != null) node.value = value; });
+    Object.entries(state.purities || {}).forEach(([id, value]) => { const node = elements.standardReagentList.querySelector(`[data-standard-purity="${id}"]`); if (node) node.value = value; });
+    Object.entries(state.reagentOverrides || {}).forEach(([id, value]) => { const node = elements.standardReagentList.querySelector(`[data-standard-reagent="${id}"]`); if (node) node.value = value; });
+    updatePrepUI();
+    calculate(false);
+  }
+
+  function loadExample(id) {
+    const examples = {
+      "pbs-1l": { bufferKey: "pbs", volume: 1, volumeUnit: "L", strength: 1 },
+      "pbs-500ml": { bufferKey: "pbs", volume: 500, volumeUnit: "mL", strength: 1 },
+      "phosphate-100ml": { bufferKey: "phosphate", volume: 100, volumeUnit: "mL", pH: 7.2, concentration: 0.1, concentrationUnit: "M", temperature: 25, prepMethod: "solid" },
+      "tris-1l": { bufferKey: "tris-buffer", volume: 1, volumeUnit: "L", pH: 8, concentration: 50, concentrationUnit: "mM", temperature: 25, prepMethod: "solid" },
+      "hepes-500ml": { bufferKey: "hepes", volume: 500, volumeUnit: "mL", pH: 7.4, concentration: 20, concentrationUnit: "mM", temperature: 25, prepMethod: "solid" }
+    };
+    restoreState(examples[id]);
+  }
+
+  function setTheme(theme, persist) {
+    document.documentElement.dataset.theme = theme;
+    elements.theme.textContent = theme === "dark" ? "淺色模式" : "深色模式";
+    elements.theme.setAttribute("aria-label", `切換為${theme === "dark" ? "淺色" : "深色"}模式`);
+    if (persist !== false && !app.Storage.setTheme(theme)) showStorageNotice();
+  }
+
+  async function copyRecipe() {
+    if (!currentResult) return;
+    const text = app.Renderer.toPlainText(currentResult);
+    let copied = false;
+    if (navigator.clipboard && root.isSecureContext) {
+      try { await navigator.clipboard.writeText(text); copied = true; } catch (_error) { copied = false; }
+    }
+    if (!copied) {
+      const area = document.createElement("textarea");
+      area.value = text;
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      copied = document.execCommand("copy");
+      area.remove();
+    }
+    const button = byId("copy-button");
+    button.textContent = copied ? "已複製" : "複製失敗";
+    root.setTimeout(() => { button.textContent = "複製配方"; }, 1600);
+  }
+
+  function bindEvents() {
+    elements.form.addEventListener("submit", (event) => { event.preventDefault(); calculate(true); });
+    elements.buffer.addEventListener("change", () => updateBufferUI(true));
+    elements.prepMethod.addEventListener("change", updatePrepUI);
+    elements.example.addEventListener("change", () => { if (elements.example.value) loadExample(elements.example.value); elements.example.value = ""; });
+    byId("reset-button").addEventListener("click", () => { elements.form.reset(); elements.buffer.value = "pbs"; updateBufferUI(true); clearErrors(); setHidden(elements.resultPanel, true); setHidden(byId("record-editor-panel"), true); currentResult = null; });
+    byId("copy-button").addEventListener("click", copyRecipe);
+    byId("print-button").addEventListener("click", () => root.print());
+    elements.theme.addEventListener("click", () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"));
+    byId("clear-history").addEventListener("click", () => { app.Storage.clearHistory(); renderHistory(); });
+    elements.historyList.addEventListener("click", (event) => {
+      const loadButton = event.target.closest("[data-history-load]");
+      const deleteButton = event.target.closest("[data-history-delete]");
+      if (loadButton) { const entry = app.Storage.getHistory().find((item) => item.id === loadButton.dataset.historyLoad); if (entry && entry.state) restoreState(entry.state); }
+      if (deleteButton) { app.Storage.deleteHistory(deleteButton.dataset.historyDelete); renderHistory(); }
+    });
+    byId("run-tests").addEventListener("click", () => app.TestRunner.render(byId("test-output")));
+    root.addEventListener("bufferlab:library-changed", () => { populateBuffers(); updateBufferUI(false); });
+  }
+
+  function displayResult(result) {
+    currentResult = app.Storage.clone(result);
+    setHidden(elements.resultPanel, false);
+    app.Renderer.renderMessages(elements.messages, currentResult.messages || []);
+    app.Renderer.renderRecipe(elements.recipeOutput, currentResult);
+  }
+
+  function init() {
+    const migrationNotice = app.Storage.migrateV1();
+    cacheElements();
+    populateBuffers();
+    setTheme(app.Storage.getTheme(), false);
+    elements.buffer.value = "pbs";
+    updateBufferUI(true);
+    renderHistory();
+    bindEvents();
+    app.RecordsUI.init();
+    app.LibraryUI.init();
+    byId("app-version").textContent = app.Constants.VERSION;
+    byId("data-version").textContent = app.Constants.DATA_VERSION;
+    const devMode = new URLSearchParams(root.location.search).get("dev") === "1";
+    setHidden(elements.tests, !devMode);
+    if (devMode) app.TestRunner.render(byId("test-output"));
+    if (migrationNotice) { const notice = byId("storage-notice"); notice.hidden = false; notice.textContent = migrationNotice; }
+  }
+
+  app.Controller = Object.freeze({ init, calculate, restoreState, displayResult });
+})(window);
+
+(function (root) {
+  "use strict";
+  root.document.addEventListener("DOMContentLoaded", function () {
+    root.BufferLab.Controller.init();
+  });
+})(window);
+
+  </script>
+</body>
+</html>
