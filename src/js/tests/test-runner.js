@@ -53,6 +53,13 @@
       const result = app.DynamicBufferEngine.calculate({ volumeL: 0.1, concentrationM: 0.1, pH: 7.2, temperatureC: 25, useStock: false, acidReagentId: "nah2po4", baseReagentId: "na2hpo4", acidPurity: 100, basePurity: 100 }, app.Buffers.phosphate);
       assertApproxEqual(result.components[0].moles + result.components[1].moles, 0.01, 1e-9);
     });
+    test("空白 pH 與溫度會被拒絕，pH 0 仍可輸入", () => {
+      const invalid = app.Validation.validateCommon({ volumeL: 1, concentrationM: 0.1, pH: NaN, temperatureC: NaN }, app.Buffers.phosphate);
+      assert(invalid.some((item) => item.code === "INVALID_PH" && item.field === "ph"), "空白 pH 應報錯");
+      assert(invalid.some((item) => item.code === "INVALID_TEMPERATURE" && item.field === "temperature"), "空白溫度應報錯");
+      const zero = app.Validation.validateCommon({ volumeL: 1, concentrationM: 0.1, pH: 0, temperatureC: 25 }, app.Buffers.phosphate);
+      assert(!app.Validation.hasErrors(zero), "明確輸入 pH 0 不應視為空值或錯誤");
+    });
     test("1 L 50 mM Tris 範例", () => {
       const result = app.DynamicBufferEngine.calculate({ volumeL: 1, concentrationM: 0.05, pH: 8, temperatureC: 25, useStock: false, acidReagentId: "tris_hcl", baseReagentId: "tris", acidPurity: 100, basePurity: 100 }, app.Buffers["tris-buffer"]);
       assertApproxEqual(result.components[0].moles + result.components[1].moles, 0.05, 1e-9);
@@ -93,6 +100,36 @@
       assert(result.components.every((item) => item.stockVolumeL == null), "固體模式不應產生滴定體積");
       assert(result.messages.some((item) => item.code === "TITRATION_REQUIRED"), "應要求實測滴定");
       assertApproxEqual(result.components[0].correctedMassG, 2.383, 1e-9);
+    });
+    test("庫存液 SOP 起始水量會為液體體積預留空間", () => {
+      const result = app.DynamicBufferEngine.calculate({ volumeL: 1, concentrationM: 0.1, pH: 7.21, temperatureC: 25, useStock: true, acidReagentId: "nah2po4", baseReagentId: "na2hpo4", acidStockM: 0.2, baseStockM: 0.2 }, app.Buffers.phosphate);
+      const liquidVolumeL = result.components.reduce((sum, item) => sum + (item.stockVolumeL || item.volumeL || 0), 0);
+      assertApproxEqual(liquidVolumeL, 0.5, 1e-9);
+      const text = app.Renderer.toPlainText(result);
+      assert(text.includes("先加入約 400 mL DI water"), "半體積庫存液應把起始水量由 800 mL 降至 400 mL");
+      assert(text.includes("已先為 500 mL 的液體試劑預留空間"), "SOP 應說明已知液體試劑的體積預留");
+      assert(text.includes("固體溶解後的體積變化無法由本工具推算"), "SOP 不可宣稱能精算固體造成的體積變化");
+    });
+    test("變更條件會清除可用的舊結果", () => {
+      const original = app.ResultState.get();
+      try {
+        const previous = { buffer: { name: "舊配方" } };
+        app.ResultState.set(previous);
+        assert(app.ResultState.get() === previous, "目前結果應可供複製與列印");
+        assert(app.ResultState.clear(), "清除應回報原本有結果");
+        assert(app.ResultState.get() === null, "清除後不可再取得舊結果");
+        assert(!app.ResultState.clear(), "重複清除不可再回報舊結果");
+      } finally {
+        if (original) app.ResultState.set(original); else app.ResultState.clear();
+      }
+    });
+    test("舊結果提醒只在結果失效後、重算前顯示", () => {
+      const notice = app.ResultState.shouldShowStaleNotice;
+      assert(!notice(false, false, false), "首次載入不應顯示提醒");
+      assert(notice(true, true, false), "成功計算後修改條件應顯示提醒");
+      assert(notice(true, false, true), "連續修改時提醒應保持顯示");
+      assert(!notice(false, false, true), "開始重算時應清除提醒");
+      assert(!notice(true, false, false), "沒有舊結果時無效輸入不應顯示過期提醒");
     });
     test("localStorage 歷史限制為 10 筆並可還原", () => {
       const key = app.Constants.STORAGE_KEYS.history;

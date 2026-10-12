@@ -68,7 +68,17 @@
   function setCurrentResult(result, record) {
     currentResult = app.Storage.clone(result);
     elements.panel.hidden = false;
+    elements.panel.open = Boolean(record);
     if (record) loadIntoForm(record); else resetForm();
+  }
+
+  function clearCurrentResult() {
+    if (currentRecord) return false;
+    currentResult = null;
+    elements.panel.hidden = true;
+    elements.printSummary.innerHTML = "";
+    status("");
+    return true;
   }
 
   function readComponents() {
@@ -161,6 +171,7 @@
 
   function renderList() {
     const records = app.Storage.getRecords();
+    elements.count.textContent = records.length ? `${records.length} 筆` : "尚無紀錄";
     renderFilterOptions(records);
     const query = elements.search.value.trim().toLocaleLowerCase("zh-TW");
     const buffer = elements.bufferFilter.value;
@@ -217,11 +228,11 @@
       panel: byId("record-editor-panel"), form: byId("record-form"), id: byId("record-id"), title: byId("record-title"),
       editState: byId("record-edit-state"), componentList: byId("record-component-list"), saveMessage: byId("record-save-message"),
       printSummary: byId("record-print-summary"), search: byId("record-search"), bufferFilter: byId("record-buffer-filter"),
-      dateFilter: byId("record-date-filter"), list: byId("records-list")
+      dateFilter: byId("record-date-filter"), list: byId("records-list"), count: byId("records-count")
     };
     bindEvents();
     renderList();
   }
 
-  app.RecordsUI = Object.freeze({ init, setCurrentResult, renderList });
+  app.RecordsUI = Object.freeze({ init, setCurrentResult, clearCurrentResult, renderList });
 })(window);

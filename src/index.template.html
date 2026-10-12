@@ -15,7 +15,7 @@
     <div>
       <p class="eyebrow">BufferLab · 離線研究工具</p>
       <h1>緩衝液配製計算器</h1>
-      <p class="subtitle">把配方縮放、酸鹼比例與實驗防呆整理成可核對的 recipe。</p>
+      <p class="subtitle">選擇配方、輸入目標，即可查看試劑需求與配製步驟。</p>
     </div>
     <button id="theme-toggle" class="icon-button" type="button" aria-label="切換深色模式">深色模式</button>
   </header>
@@ -30,7 +30,7 @@
     <section class="panel form-panel no-print" aria-labelledby="settings-title">
       <div class="section-heading">
         <div>
-          <p class="step-label">STEP 01</p>
+          <p class="step-label">步驟 1</p>
           <h2 id="settings-title">設定配製條件</h2>
         </div>
         <label class="example-picker">載入範例
@@ -49,75 +49,81 @@
         <div class="form-grid">
           <div class="field field-wide">
             <label for="buffer-select">緩衝液種類 <span aria-hidden="true">*</span></label>
-            <select id="buffer-select" name="buffer" required></select>
+            <select id="buffer-select" name="buffer" required aria-describedby="buffer-help buffer-error"></select>
             <p class="field-help" id="buffer-help">選擇後會自動切換適用欄位。</p>
-            <p class="field-error" data-error-for="buffer"></p>
+            <p class="field-error" id="buffer-error" data-error-for="buffer" aria-live="polite"></p>
           </div>
 
           <div class="field">
-            <label for="mode-display">配製模式</label>
-            <input id="mode-display" type="text" readonly>
-          </div>
-
-          <div class="field">
-            <label for="volume-input">目標體積 <span aria-hidden="true">*</span></label>
+            <label for="volume-input">目標最終體積 <span aria-hidden="true">*</span></label>
             <div class="input-pair">
-              <input id="volume-input" name="volume" type="number" min="0" step="any" value="1" inputmode="decimal" required>
+              <input id="volume-input" name="volume" type="number" min="0" step="any" value="1" inputmode="decimal" required aria-describedby="volume-help volume-error">
               <select id="volume-unit" aria-label="體積單位">
                 <option value="µL">µL</option>
                 <option value="mL">mL</option>
                 <option value="L" selected>L</option>
               </select>
             </div>
-            <p class="field-error" data-error-for="volume"></p>
+            <p class="field-help" id="volume-help">輸入定容後的體積，並選擇右側單位。</p>
+            <p class="field-error" id="volume-error" data-error-for="volume" aria-live="polite"></p>
           </div>
 
           <div id="standard-fields" class="field">
             <label for="strength-input">目標倍數 <span aria-hidden="true">*</span></label>
             <div class="input-suffix">
-              <input id="strength-input" name="strength" type="number" min="0" step="any" value="1" inputmode="decimal">
+              <input id="strength-input" name="strength" type="number" min="0" step="any" value="1" inputmode="decimal" aria-describedby="strength-help strength-error">
               <span>×</span>
             </div>
-            <p class="field-help">可輸入配方允許範圍內的自訂倍數。</p>
-            <p class="field-error" data-error-for="strength"></p>
+            <p class="field-help" id="strength-help">可依配方允許範圍輸入自訂倍數。</p>
+            <p class="field-error" id="strength-error" data-error-for="strength" aria-live="polite"></p>
           </div>
 
           <div id="ph-field" class="field">
             <label for="ph-input">目標 pH <span aria-hidden="true">*</span></label>
-            <input id="ph-input" name="ph" type="number" min="0" max="14" step="0.01" value="7.2" inputmode="decimal">
-            <p class="field-error" data-error-for="ph"></p>
+            <input id="ph-input" name="ph" type="number" min="0" max="14" step="0.01" value="7.2" inputmode="decimal" aria-describedby="ph-help ph-error">
+            <p class="field-help" id="ph-help">輸入目標 pH（0–14）。</p>
+            <p class="field-error" id="ph-error" data-error-for="ph" aria-live="polite"></p>
           </div>
 
           <div id="concentration-field" class="field">
             <label for="concentration-input">總緩衝物種濃度 <span aria-hidden="true">*</span></label>
             <div class="input-pair">
-              <input id="concentration-input" name="concentration" type="number" min="0" step="any" value="100" inputmode="decimal">
+              <input id="concentration-input" name="concentration" type="number" min="0" step="any" value="100" inputmode="decimal" aria-describedby="concentration-help concentration-error">
               <select id="concentration-unit" aria-label="濃度單位">
                 <option value="mM" selected>mM</option>
                 <option value="M">M</option>
               </select>
             </div>
-            <p class="field-error" data-error-for="concentration"></p>
-          </div>
-
-          <div id="temperature-field" class="field">
-            <label for="temperature-input">配製溫度</label>
-            <div class="input-suffix">
-              <input id="temperature-input" name="temperature" type="number" step="0.1" value="25" inputmode="decimal">
-              <span>°C</span>
-            </div>
-            <p class="field-help">僅 Tris 在 5–37°C 內套用溫度修正。</p>
-            <p class="field-error" data-error-for="temperature"></p>
-          </div>
-
-          <div id="prep-method-field" class="field field-wide">
-            <label for="prep-method">試劑來源</label>
-            <select id="prep-method">
-              <option value="solid">固體試劑</option>
-              <option value="stock">庫存液</option>
-            </select>
+            <p class="field-help" id="concentration-help">酸型與鹼型緩衝物種的總濃度。</p>
+            <p class="field-error" id="concentration-error" data-error-for="concentration" aria-live="polite"></p>
           </div>
         </div>
+
+        <details id="advanced-settings" class="advanced-settings">
+          <summary><strong>進階設定（選填）</strong><span class="muted">試劑型態、純度與溫度</span></summary>
+          <div class="advanced-content">
+            <div class="form-grid advanced-fields">
+              <div class="field">
+                <label for="mode-display">配製模式</label>
+                <input id="mode-display" type="text" readonly>
+              </div>
+              <div id="temperature-field" class="field">
+                <label for="temperature-input">配製溫度 <span aria-hidden="true">*</span></label>
+                <div class="input-suffix">
+                  <input id="temperature-input" name="temperature" type="number" step="0.1" value="25" inputmode="decimal" aria-describedby="temperature-help temperature-error">
+                  <span>°C</span>
+                </div>
+                <p class="field-help" id="temperature-help">動態計算必填；僅 Tris 在 5–37°C 內套用溫度修正。</p>
+                <p class="field-error" id="temperature-error" data-error-for="temperature" aria-live="polite"></p>
+              </div>
+              <div id="prep-method-field" class="field field-wide">
+                <label for="prep-method">試劑來源</label>
+                <select id="prep-method">
+                  <option value="solid">固體試劑</option>
+                  <option value="stock">庫存液</option>
+                </select>
+              </div>
+            </div>
 
         <fieldset id="paired-settings" class="subpanel">
           <legend>酸型與鹼型試劑</legend>
@@ -175,31 +181,24 @@
           </div>
         </fieldset>
 
+          </div>
+        </details>
+
         <div class="form-actions">
-          <button class="button button-primary" type="submit">計算配方</button>
+          <button class="button button-primary" type="submit">計算秤量與步驟</button>
           <button id="reset-button" class="button button-secondary" type="button">重設</button>
         </div>
+        <p id="result-stale-notice" class="inline-status" aria-live="polite" hidden>配製條件已變更；請重新計算後再使用結果。</p>
       </form>
     </section>
-
-    <aside class="panel history-panel no-print" aria-labelledby="history-title">
-      <div class="section-heading compact">
-        <div>
-          <p class="step-label">RECENT</p>
-          <h2 id="history-title">最近計算</h2>
-        </div>
-        <button id="clear-history" class="text-button" type="button">全部清除</button>
-      </div>
-      <div id="history-list" class="history-list"></div>
-    </aside>
 
     <section id="result-panel" class="panel result-panel" aria-labelledby="result-title" hidden>
       <div class="section-heading">
         <div>
-          <p class="step-label">STEP 02</p>
+          <p class="step-label">步驟 2</p>
           <h2 id="result-title">配製結果</h2>
         </div>
-        <div class="result-actions no-print">
+        <div id="result-actions" class="result-actions no-print" hidden>
           <button id="copy-button" class="button button-secondary" type="button">複製配方</button>
           <button id="print-button" class="button button-secondary" type="button">列印／PDF</button>
         </div>
@@ -208,14 +207,23 @@
       <div id="recipe-output"></div>
     </section>
 
-    <section id="record-editor-panel" class="panel record-editor-panel no-print" aria-labelledby="record-editor-title" hidden>
-      <div class="section-heading">
-        <div>
-          <p class="step-label">STEP 03</p>
-          <h2 id="record-editor-title">實際配製紀錄</h2>
-        </div>
-        <span id="record-edit-state" class="status-badge">新增紀錄</span>
+    <details class="panel history-panel no-print" aria-labelledby="history-title">
+      <summary class="panel-summary">
+        <span class="panel-summary-title"><span class="step-label">最近</span><strong id="history-title">最近計算</strong></span>
+        <span id="history-count" class="muted">最多 10 筆</span>
+      </summary>
+      <div class="panel-content">
+        <div class="section-heading compact"><p class="field-help">此瀏覽器保留最近 10 筆計算。</p><button id="clear-history" class="text-button" type="button">清除紀錄</button></div>
+        <div id="history-list" class="history-list"></div>
       </div>
+    </details>
+
+    <details id="record-editor-panel" class="panel record-editor-panel no-print" aria-labelledby="record-editor-title" hidden>
+      <summary class="panel-summary">
+        <span class="panel-summary-title"><span class="step-label">步驟 3 · 選填</span><strong id="record-editor-title">實際配製紀錄</strong></span>
+        <span id="record-edit-state" class="status-badge">新增紀錄</span>
+      </summary>
+      <div class="panel-content">
       <p class="field-help">理論計算不會自動改成實測結果；未填欄位會標示為「尚未記錄」。</p>
       <form id="record-form" novalidate>
         <input id="record-id" type="hidden">
@@ -238,24 +246,28 @@
         </div>
         <div id="record-save-message" class="inline-status" aria-live="polite"></div>
       </form>
-    </section>
+      </div>
+    </details>
 
     <section id="record-print-summary" class="print-only"></section>
 
-    <section class="panel records-panel no-print" aria-labelledby="records-title">
-      <div class="section-heading">
-        <div><p class="step-label">ARCHIVE</p><h2 id="records-title">配製紀錄</h2></div>
-      </div>
+    <details class="panel records-panel no-print" aria-labelledby="records-title">
+      <summary class="panel-summary">
+        <span class="panel-summary-title"><span class="step-label">紀錄庫</span><strong id="records-title">配製紀錄</strong></span>
+        <span id="records-count" class="muted">尚無紀錄</span>
+      </summary>
+      <div class="panel-content">
       <div class="record-filters">
         <div class="field"><label for="record-search">名稱搜尋</label><input id="record-search" type="search" placeholder="輸入紀錄或緩衝液名稱"></div>
         <div class="field"><label for="record-buffer-filter">緩衝液</label><select id="record-buffer-filter"><option value="">全部</option></select></div>
         <div class="field"><label for="record-date-filter">配製日期</label><input id="record-date-filter" type="date"></div>
       </div>
       <div id="records-list" class="records-list"></div>
-    </section>
+      </div>
+    </details>
 
     <details class="panel library-panel no-print" id="library-panel">
-      <summary><span class="step-label">LIBRARY</span><strong>自訂資料庫</strong></summary>
+      <summary><span class="step-label">資料庫</span><strong>自訂資料庫</strong></summary>
       <p class="field-help">內建資料唯讀；自訂內容均標示為未經 BufferLab 驗證。</p>
       <div id="library-message" class="inline-status" aria-live="polite"></div>
       <div class="library-grid">
@@ -320,7 +332,7 @@
     </details>
 
     <section class="panel help-panel no-print" aria-labelledby="help-title">
-      <p class="step-label">GUIDE</p>
+      <p class="step-label">說明</p>
       <h2 id="help-title">使用與限制</h2>
       <div class="help-grid">
         <article><h3>標準模式</h3><p>依具來源的基準配方縮放體積與倍數，適合 PBS、TBS、TAE、TBE、SSC。</p></article>

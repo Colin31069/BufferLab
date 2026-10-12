@@ -29,6 +29,7 @@ $scriptFiles = @(
   "src\js\engines\standard-recipe.js",
   "src\js\engines\dynamic-buffer.js",
   "src\js\services\records.js",
+  "src\js\services\result-state.js",
   "src\js\ui\renderer.js",
   "src\js\ui\library-manager.js",
   "src\js\ui\records.js",
@@ -74,9 +75,9 @@ $scriptMarker = "/*__INLINE_JS__*/"
 if ([regex]::Matches($template, [regex]::Escape($cssMarker)).Count -ne 1) { throw "CSS injection marker must appear exactly once." }
 if ([regex]::Matches($template, [regex]::Escape($scriptMarker)).Count -ne 1) { throw "JavaScript injection marker must appear exactly once." }
 
-$css = ($styleFiles | ForEach-Object { Read-ProjectFile $_ }) -join "`r`n"
-$javascript = ($scriptFiles | ForEach-Object { Read-ProjectFile $_ }) -join "`r`n"
-$html = $template.Replace($cssMarker, $css).Replace($scriptMarker, $javascript)
+$css = ($styleFiles | ForEach-Object { Read-ProjectFile $_ }) -join "`n"
+$javascript = ($scriptFiles | ForEach-Object { Read-ProjectFile $_ }) -join "`n"
+$html = $template.Replace($cssMarker, $css).Replace($scriptMarker, $javascript).Replace("`r`n", "`n").Replace("`r", "`n")
 
 Assert-SafeSource $html
 if ($html.Contains("/*__INLINE_CSS__*/") -or $html.Contains("/*__INLINE_JS__*/")) {

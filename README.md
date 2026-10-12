@@ -11,7 +11,7 @@
 - 自訂試劑、固定配方、成對酸鹼模型及滴定指引模型。
 - 可編輯的實際配製紀錄、修訂次數、搜尋、批次複製及理論／實測差異。
 - 分級錯誤與警告、完整 SOP、複製及強化 A4 列印／PDF。
-- 深色模式、最近 10 筆計算、五個範例與 38 項內建數值測試。
+- 深色模式、最近 10 筆計算、五個範例與 42 項內建數值測試。
 
 ## 建置
 
@@ -23,7 +23,20 @@ powershell -ExecutionPolicy Bypass -File .\tools\build.ps1
 
 建置腳本會先檢查所有來源、禁止的外部依賴與注入標記，再以 Microsoft Edge headless 執行內建測試。通過後才寫入 `dist/index.html`。
 
-若建置環境沒有 Edge，可在已另行完成瀏覽器測試的受控環境使用：
+macOS 或其他跨平台環境可用 Node.js 內建模組建置及檢查，不需安裝套件：
+
+```sh
+node tools/build.mjs
+node tools/build.mjs --check
+```
+
+此路徑會先執行內建邏輯測試。若要追加瀏覽器測試，提供 Chrome／Edge headless 執行檔路徑：
+
+```sh
+node tools/build.mjs --browser "/path/to/chrome"
+```
+
+若 Windows 建置環境沒有 Edge，可在已另行完成瀏覽器測試的受控環境使用：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\build.ps1 -SkipBrowserTests

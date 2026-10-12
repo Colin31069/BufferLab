@@ -6,7 +6,7 @@
 
 單一檔案的離線緩衝液配製計算器。**最終產物只有 `dist/index.html`** — 一個把 CSS 與 JS 全部內嵌的 HTML，可以直接用 `file://` 開啟，不需要伺服器、不需要 npm、不連任何網路。
 
-`src/` 是可維護的分割原始碼，`tools/build.ps1` 負責把它們串接成 `dist/index.html`。
+`src/` 是可維護的分割原始碼；`tools/build.ps1` 與 `tools/build.mjs` 可把它們串接成 `dist/index.html`。
 
 ## 最重要的規則
 
@@ -20,6 +20,19 @@
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\build.ps1
+```
+
+macOS／跨平台環境可用 Node.js 內建模組建置，預設會先執行內建邏輯測試：
+
+```sh
+node tools/build.mjs
+node tools/build.mjs --check
+```
+
+若要由瀏覽器執行完整內建測試，可加上 headless 瀏覽器執行檔路徑：
+
+```sh
+node tools/build.mjs --browser "/path/to/chrome"
 ```
 
 建置流程：檢查來源檔存在 → 檢查注入標記各出現一次 → 串接 CSS/JS → 掃描禁止的外部依賴 → 寫入暫存檔 → **用 headless Edge 執行內建測試，要求 DOM 出現 `data-test-status="passed"`** → 才寫入 `dist/index.html`。
@@ -36,7 +49,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\build.ps1 -SkipBrowserTests
 powershell -ExecutionPolicy Bypass -File .\tools\build.ps1 -Check
 ```
 
-手動跑測試：用瀏覽器開 `dist/index.html?dev=1`，展開「開發者測試」。目前 38 項測試全部必須通過。
+手動跑測試：用瀏覽器開 `dist/index.html?dev=1`，展開「開發者測試」。目前 42 項測試全部必須通過。
 
 沒有 linter、沒有 formatter、沒有 CI。測試就是 `src/js/tests/test-runner.js`，它是一個手寫的 runner，跑在真實瀏覽器裡。
 
@@ -59,7 +72,7 @@ core/constants → core/units → core/formatter
   → data/references → data/reagents → data/buffers
   → services/storage → services/library → services/provenance
   → engines/validation → engines/standard-recipe → engines/dynamic-buffer
-  → services/records
+  → services/records → services/result-state
   → ui/renderer → ui/library-manager → ui/records → tests/test-runner → ui/controller
   → app.js（DOMContentLoaded 時呼叫 Controller.init）
 ```
@@ -124,11 +137,4 @@ core/constants → core/units → core/formatter
 
 ## 已知問題
 
-追蹤中的問題一律記在 [ISSUE.md](ISSUE.md)，**動手前先讀過**。目前包含：
-
-- **A1**：`validateResult` 不檢查 `kind: "volume"` 的組成，液體試劑體積超過最終體積時不會報錯。
-- **A2**：`app.Buffers` 中 Tris 的 key 是 `tris` 但 `id` 是 `tris-buffer`，兩者不一致，會讓 `Library.getBuffer(buffer.id)` 對它回傳 `null`（自訂資料庫的「複製」按鈕因此失效）。修這個要同時處理既有 localStorage 紀錄的相容性。
-- **A3**：化學式在水合物選單、配製紀錄欄位與列印表格三處缺漏。
-- **E4**：缺少獨立的 KH₂PO₄／Na₂HPO₄ phosphate buffer。
-
-具體改法與驗收清單見 [docs/work-order-2026-08-04.md](docs/work-order-2026-08-04.md)。
+未解項目與完成狀態以 [ISSUE.md](ISSUE.md) 為準。目前 A1、A2、A3 與 E4 均已完成；已完成項目的原始定位與驗收條件保留在該檔及 [docs/work-order-2026-08-04.md](docs/work-order-2026-08-04.md)。

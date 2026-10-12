@@ -9,7 +9,6 @@
   });
 
   let elements;
-  let currentResult = null;
 
   function byId(id) { return document.getElementById(id); }
   function setHidden(element, hidden) { element.hidden = Boolean(hidden); }
@@ -26,7 +25,8 @@
       acidPurity: byId("acid-purity"), basePurity: byId("base-purity"), singlePurity: byId("single-purity"),
       acidStock: byId("acid-stock"), baseStock: byId("base-stock"), singleStock: byId("single-stock"),
       resultPanel: byId("result-panel"), recipeOutput: byId("recipe-output"), messages: byId("message-summary"),
-      historyList: byId("history-list"), example: byId("example-select"), theme: byId("theme-toggle"), tests: byId("developer-tests"), storageNotice: byId("storage-notice")
+      historyList: byId("history-list"), example: byId("example-select"), theme: byId("theme-toggle"), tests: byId("developer-tests"), storageNotice: byId("storage-notice"),
+      resultActions: byId("result-actions"), resultStaleNotice: byId("result-stale-notice"), historyCount: byId("history-count")
     };
   }
 
@@ -71,6 +71,7 @@
     setHidden(elements.concentrationField, standard);
     setHidden(elements.temperatureField, standard);
     setHidden(elements.prepMethodField, standard);
+    elements.temperature.required = !standard;
     setHidden(elements.pairedSettings, standard || buffer.dynamic && buffer.dynamic.strategy !== "paired");
     setHidden(elements.singleSettings, standard || buffer.dynamic && buffer.dynamic.strategy !== "titration");
 
@@ -104,14 +105,41 @@
 
   function clearErrors() {
     document.querySelectorAll(".field-error").forEach((node) => { node.textContent = ""; });
+    document.querySelectorAll('[aria-invalid="true"]').forEach((node) => node.removeAttribute("aria-invalid"));
   }
 
   function showFieldErrors(messages) {
     clearErrors();
-    messages.filter((item) => item.field).forEach((item) => {
+    messages.filter((item) => item.level === "error" && item.field).forEach((item) => {
       const node = document.querySelector(`[data-error-for="${item.field}"]`);
+      const input = ({
+        buffer: elements.buffer, volume: elements.volume, strength: elements.strength, ph: elements.pH,
+        concentration: elements.concentration, temperature: elements.temperature,
+        acidPurity: elements.acidPurity, basePurity: elements.basePurity, singlePurity: elements.singlePurity
+      })[item.field];
       if (node && !node.textContent) node.textContent = item.text;
+      if (input) input.setAttribute("aria-invalid", "true");
+      const advanced = input && input.closest("#advanced-settings");
+      if (advanced) advanced.open = true;
     });
+  }
+
+  function invalidateCurrentResult(showNotice) {
+    const hadResult = app.ResultState.clear();
+    const wasStale = !elements.resultStaleNotice.hidden;
+    if (hadResult) app.RecordsUI.clearCurrentResult();
+    if (hadResult || wasStale || !showNotice) {
+      setHidden(elements.resultPanel, true);
+      setHidden(elements.resultActions, true);
+      elements.messages.innerHTML = "";
+      elements.recipeOutput.innerHTML = "";
+    }
+    setHidden(elements.resultStaleNotice, !app.ResultState.shouldShowStaleNotice(showNotice, hadResult, wasStale));
+  }
+
+  function readNumber(element) {
+    const value = element.value.trim();
+    return value === "" ? NaN : Number(value);
   }
 
   function readStandardOverrides() {
@@ -133,10 +161,10 @@
     const input = {
       bufferKey: key,
       volumeL,
-      strength: Number(elements.strength.value),
+      strength: readNumber(elements.strength),
       concentrationM,
-      pH: Number(elements.pH.value),
-      temperatureC: Number(elements.temperature.value),
+      pH: readNumber(elements.pH),
+      temperatureC: readNumber(elements.temperature),
       useStock: elements.prepMethod.value === "stock",
       acidReagentId: elements.acidReagent.value,
       baseReagentId: elements.baseReagent.value,
@@ -196,11 +224,14 @@
   }
 
   function calculate(saveHistory) {
+    invalidateCurrentResult(false);
+    clearErrors();
     const { input, buffer } = readInput();
     let messages = app.Validation.validateCommon(input, buffer).concat(additionalValidation(input, buffer));
     showFieldErrors(messages);
     if (app.Validation.hasErrors(messages)) {
       setHidden(elements.resultPanel, false);
+      setHidden(elements.resultActions, true);
       elements.recipeOutput.innerHTML = "";
       app.Renderer.renderMessages(elements.messages, messages);
       elements.resultPanel.scrollIntoView({ behavior: app.Renderer.scrollBehavior(), block: "start" });
@@ -212,15 +243,17 @@
       messages = messages.concat(result.messages, app.Validation.validateResult(result, input));
       result.messages = messages;
       if (app.Validation.hasErrors(messages)) {
-        currentResult = null;
         setHidden(elements.resultPanel, false);
+        setHidden(elements.resultActions, true);
         app.Renderer.renderMessages(elements.messages, messages);
         elements.recipeOutput.innerHTML = "";
         elements.resultPanel.scrollIntoView({ behavior: app.Renderer.scrollBehavior(), block: "start" });
         return null;
       }
-      currentResult = result;
+      app.ResultState.set(result);
       setHidden(elements.resultPanel, false);
+      setHidden(elements.resultActions, false);
+      setHidden(elements.resultStaleNotice, true);
       app.Renderer.renderMessages(elements.messages, messages);
       app.Renderer.renderRecipe(elements.recipeOutput, result);
       app.RecordsUI.setCurrentResult(result);
@@ -231,6 +264,8 @@
       elements.resultPanel.scrollIntoView({ behavior: app.Renderer.scrollBehavior(), block: "start" });
       return result;
     } catch (error) {
+      app.ResultState.clear();
+      setHidden(elements.resultActions, true);
       messages.push(app.Validation.message("error", "CALCULATION_FAILED", error.message || "計算失敗。"));
       app.Renderer.renderMessages(elements.messages, messages);
       elements.recipeOutput.innerHTML = "";
@@ -241,6 +276,7 @@
 
   function renderHistory() {
     const history = app.Storage.getHistory();
+    elements.historyCount.textContent = history.length ? `${history.length} 筆` : "尚無紀錄";
     elements.historyList.innerHTML = history.length ? history.map((entry) => `
       <article class="history-item">
         <strong>${F.escapeHtml(entry.name || "未命名計算")}</strong>${entry.status === "user-unverified" ? `<span class="status-badge unverified">自訂未驗證</span>` : ""}<span>${F.escapeHtml(entry.summary || "資料不完整")}</span><span>${entry.createdAt ? new Date(entry.createdAt).toLocaleString("zh-TW") : "時間未記錄"}</span>
@@ -279,8 +315,9 @@
   }
 
   async function copyRecipe() {
-    if (!currentResult) return;
-    const text = app.Renderer.toPlainText(currentResult);
+    const result = app.ResultState.get();
+    if (!result) return;
+    const text = app.Renderer.toPlainText(result);
     let copied = false;
     if (navigator.clipboard && root.isSecureContext) {
       try { await navigator.clipboard.writeText(text); copied = true; } catch (_error) { copied = false; }
@@ -301,11 +338,13 @@
   }
 
   function bindEvents() {
+    elements.form.addEventListener("input", () => { clearErrors(); invalidateCurrentResult(true); });
+    elements.form.addEventListener("change", () => { clearErrors(); invalidateCurrentResult(true); });
     elements.form.addEventListener("submit", (event) => { event.preventDefault(); calculate(true); });
     elements.buffer.addEventListener("change", () => updateBufferUI(true));
     elements.prepMethod.addEventListener("change", updatePrepUI);
     elements.example.addEventListener("change", () => { if (elements.example.value) loadExample(elements.example.value); elements.example.value = ""; });
-    byId("reset-button").addEventListener("click", () => { elements.form.reset(); elements.buffer.value = "pbs"; updateBufferUI(true); clearErrors(); setHidden(elements.resultPanel, true); setHidden(byId("record-editor-panel"), true); currentResult = null; });
+    byId("reset-button").addEventListener("click", () => { elements.form.reset(); elements.buffer.value = "pbs"; updateBufferUI(true); clearErrors(); invalidateCurrentResult(false); setHidden(elements.resultPanel, true); setHidden(byId("record-editor-panel"), true); });
     byId("copy-button").addEventListener("click", copyRecipe);
     byId("print-button").addEventListener("click", () => root.print());
     elements.theme.addEventListener("click", () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"));
@@ -321,10 +360,13 @@
   }
 
   function displayResult(result) {
-    currentResult = app.Storage.clone(result);
+    const snapshot = app.Storage.clone(result);
+    app.ResultState.set(snapshot);
     setHidden(elements.resultPanel, false);
-    app.Renderer.renderMessages(elements.messages, currentResult.messages || []);
-    app.Renderer.renderRecipe(elements.recipeOutput, currentResult);
+    setHidden(elements.resultActions, false);
+    setHidden(elements.resultStaleNotice, true);
+    app.Renderer.renderMessages(elements.messages, snapshot.messages || []);
+    app.Renderer.renderRecipe(elements.recipeOutput, snapshot);
   }
 
   function init() {

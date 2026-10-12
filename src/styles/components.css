@@ -24,6 +24,21 @@ input[readonly], select:disabled { color: var(--muted); background: var(--surfac
 .text-button { padding: .35rem; color: var(--accent-strong); background: transparent; }
 .example-picker { min-width: 190px; color: var(--muted); }
 .example-picker select { margin-top: .25rem; }
+.advanced-settings { margin-top: 1.1rem; padding: .85rem 1rem; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 14px; }
+.advanced-settings > summary { display: flex; justify-content: space-between; align-items: center; gap: .75rem; cursor: pointer; font-weight: 800; }
+.advanced-settings > summary::marker { color: var(--accent); }
+.advanced-content { padding-top: .9rem; }
+.advanced-fields { margin-bottom: .25rem; }
+.advanced-settings .subpanel { margin-top: .8rem; background: var(--surface); }
+.panel-summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; cursor: pointer; list-style: none; }
+.panel-summary::-webkit-details-marker { display: none; }
+.panel-summary::after { content: "展開"; color: var(--accent-strong); font-size: .82rem; font-weight: 800; white-space: nowrap; }
+.panel-summary-title { display: grid; gap: .15rem; }
+.panel-summary-title .step-label { margin: 0; }
+.panel-summary-title strong { font-size: 1.12rem; }
+.panel-content { padding-top: 1.1rem; }
+.record-editor-panel > summary .status-badge { margin-left: auto; }
+.record-editor-panel > summary::after { margin-left: .5rem; }
 .history-list { display: grid; gap: .75rem; }
 .history-empty { color: var(--muted); font-size: .9rem; }
 .history-item { padding: .85rem; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px; }
@@ -74,10 +89,18 @@ th { color: var(--muted); font-size: .78rem; letter-spacing: .04em; }
 .component-editor-row label { font-size: .78rem; }
 .provenance-strip { display: flex; flex-wrap: wrap; gap: .45rem; margin-bottom: 1rem; }
 .delta { color: var(--muted); font-size: .8rem; }
+.section-heading.compact > .field-help { margin: 0; }
+.form-actions .button-primary { min-width: 210px; }
+[aria-invalid="true"] { border-color: var(--danger); }
 
 @media (max-width: 680px) {
   .form-grid, .recipe-summary, .help-grid { grid-template-columns: 1fr; }
   .field-wide { grid-column: 1; }
   .result-actions { margin-top: 0; }
   .record-filters, .library-grid, .record-component-grid, .component-editor-row { grid-template-columns: 1fr; }
+  .advanced-settings > summary { align-items: flex-start; flex-direction: column; gap: .2rem; }
+  .panel-summary { align-items: flex-start; }
+  .panel-summary::after { margin-top: .3rem; }
+  .form-actions .button-primary { flex: 1 1 100%; }
+  .form-actions .button-secondary { flex: 1; }
 }

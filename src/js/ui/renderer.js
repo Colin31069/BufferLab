@@ -69,16 +69,25 @@
 
   function sop(result) {
     const input = result.input;
-    const initialWater = input.volumeL * app.Constants.INITIAL_WATER_FRACTION;
+    const liquidVolumeL = result.components.reduce((sum, component) => {
+      if (component.stockVolumeL != null) return sum + component.stockVolumeL;
+      if (component.volumeL != null) return sum + component.volumeL;
+      return sum;
+    }, 0);
+    const availableVolumeL = Math.max(0, input.volumeL - liquidVolumeL);
+    const initialWater = Math.min(input.volumeL * app.Constants.INITIAL_WATER_FRACTION, availableVolumeL * app.Constants.INITIAL_WATER_FRACTION);
+    const waterStep = liquidVolumeL > 0
+      ? `先加入約 ${F.volume(initialWater)} DI water；起始水量已先為 ${F.volume(liquidVolumeL)} 的液體試劑預留空間。`
+      : `先加入約 ${F.volume(initialWater)} DI water（約目標體積的 80%），供初步溶解使用。`;
     const names = result.components.map((item) => item.reagent.zhName).join("、");
     const titration = result.mode === "dynamic" && result.buffer.dynamic.strategy === "titration";
     return [
       "準備乾淨容器、適用天平或量器，以及校正完成的 pH meter。",
-      `先加入約 ${F.volume(initialWater)} DI water（目標體積的 80%）。`,
+      waterStep,
       `依序加入 ${names}，攪拌至完全溶解或混合均勻。`,
       result.mode === "dynamic" ? `在約 ${F.number(input.temperatureC, 1)}°C 量測 pH。` : `確認配方建議 pH 約為 ${F.number(result.buffer.defaultPH, 2)}。`,
       titration ? "本模式使用自由酸試劑；以適當濃度 NaOH 少量逐步滴定，若過量不可用理論值回推修正。" : "如需調整，使用適當濃度的 HCl 或 NaOH 少量逐步加入並持續量測。",
-      `以 DI water 定容至 ${F.volume(input.volumeL)}；不要以固體體積推算精確剩餘水量。`,
+      `以 DI water 分次定容至 ${F.volume(input.volumeL)}；起始水量不是精確用水量，固體溶解後的體積變化無法由本工具推算。`,
       "充分混合後再次確認 pH，並記錄實際溫度與讀值。",
       "依實驗室 SOP 決定是否過濾除菌、滅菌、分裝及保存。"
     ];

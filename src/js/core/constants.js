@@ -5,7 +5,7 @@
 
   app.Constants = Object.freeze({
     APP_NAME: "緩衝液配製計算器",
-    VERSION: "2.0.0",
+    VERSION: "2.0.1",
     DATA_VERSION: "2026-08-04",
     INITIAL_WATER_FRACTION: 0.8,
     MIN_RELIABLE_MASS_G: 0.001,
